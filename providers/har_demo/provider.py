@@ -3,19 +3,16 @@ HAR Demo Dataset Provider - Loads data from the Flutter mobile app.
 Handles CSV files from server/collected_data/
 
 Preprocessing for HAR Demo:
-- Simple z-score normalization (mobile sensors are clean)
+- No normalization (raw sensor values preserved for RAG/LLM classification)
 - Fixed window size: 200 samples (4 seconds at 50Hz)
 - 50% overlap (100 sample step)
 - No filtering needed (high-quality mobile sensor data)
 """
 
 import sys
-import pickle
 from pathlib import Path
 from typing import Dict, List, Tuple
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler
 import logging
 
 # Add parent directory to path
@@ -88,9 +85,9 @@ class HARDemoProvider(DatasetProvider):
 
         Steps:
         1. Load raw data (already has standardized column names)
-        2. Z-score normalization across all sensor axes
-        3. Segment into 200-sample windows with 50% overlap
-        4. Save as pickle and CSV files
+        2. Segment into 200-sample windows with 50% overlap
+        3. Train/test split (10% test per activity)
+        4. Save as CSV files
 
         Args:
             output_dir: Directory to save preprocessed windows
@@ -103,7 +100,7 @@ class HARDemoProvider(DatasetProvider):
         logger.info("="*60)
         logger.info("Dataset: Clean mobile sensor data")
         logger.info("Sensors: Accelerometer, Gyroscope, Magnetometer (50Hz)")
-        logger.info("Normalization: Z-score (mean=0, std=1)")
+        logger.info("Normalization: None (raw sensor values preserved)")
         logger.info("Window size: 200 samples (4 seconds)")
         logger.info("Overlap: 50% (100 sample step)")
         logger.info("")
@@ -115,31 +112,21 @@ class HARDemoProvider(DatasetProvider):
         logger.info("Step 1: Loading raw data...")
         data = self.load_raw_data()
 
-        # Step 2: Normalize
-        logger.info("Step 2: Normalizing sensor data...")
-        normalized_data, scaler = self._normalize_data(data)
+        # Step 2: Segment into windows
+        logger.info("Step 2: Segmenting into windows...")
+        windows = self._segment_windows(data)
 
-        # Step 3: Segment into windows
-        logger.info("Step 3: Segmenting into windows...")
-        windows = self._segment_windows(normalized_data)
-
-        # Step 4: Train/Test split (10% test per activity)
-        logger.info("Step 4: Splitting train/test (10% test per activity)...")
+        # Step 3: Train/Test split (10% test per activity)
+        logger.info("Step 3: Splitting train/test (10% test per activity)...")
         train_windows, test_windows = self._split_train_test(windows, test_ratio=0.1)
 
-        # Step 5: Save windows
-        logger.info("Step 5: Saving windows...")
+        # Step 4: Save windows
+        logger.info("Step 4: Saving windows...")
         train_test_dir = output_path / 'train-test-splits'
         train_test_dir.mkdir(exist_ok=True)
 
-        train_dir = self._save_windows(train_windows, train_test_dir, split_name='train')
-        test_dir = self._save_windows(test_windows, train_test_dir, split_name='test')
-
-        # Save scaler
-        scaler_file = output_path / 'scaler.pkl'
-        with open(scaler_file, 'wb') as f:
-            pickle.dump(scaler, f)
-        logger.info(f"Saved scaler to {scaler_file}")
+        self._save_windows(train_windows, train_test_dir, split_name='train')
+        self._save_windows(test_windows, train_test_dir, split_name='test')
 
         # Save summary
         self._save_summary(train_windows, test_windows, output_path)
@@ -150,32 +137,6 @@ class HARDemoProvider(DatasetProvider):
         logger.info(f"✓ Output: {train_test_dir}")
 
         return str(train_test_dir)
-
-    def _normalize_data(self, data: Dict[str, pd.DataFrame]) -> tuple:
-        """Z-score normalization for HAR Demo sensors."""
-        # Combine all data for fitting
-        all_data = pd.concat(data.values(), ignore_index=True)
-
-        # Sensor columns to normalize
-        sensor_cols = [
-            'accel_x', 'accel_y', 'accel_z',
-            'gyro_x', 'gyro_y', 'gyro_z',
-            'mag_x', 'mag_y', 'mag_z'
-        ]
-
-        # Fit scaler on all data
-        scaler = StandardScaler()
-        scaler.fit(all_data[sensor_cols])
-
-        # Transform each activity
-        normalized_data = {}
-        for activity, df in data.items():
-            df_norm = df.copy()
-            df_norm[sensor_cols] = scaler.transform(df[sensor_cols])
-            normalized_data[activity] = df_norm
-            logger.info(f"  Normalized {activity}: {len(df)} samples")
-
-        return normalized_data, scaler
 
     def _segment_windows(self, data: Dict[str, pd.DataFrame]) -> List[Dict]:
         """Segment data into 200-sample windows with 50% overlap."""
@@ -317,7 +278,7 @@ class HARDemoProvider(DatasetProvider):
             f.write(f"Window size: 200 samples (4 seconds)\n")
             f.write(f"Step size: 100 samples (50% overlap)\n")
             f.write(f"Sampling rate: 50 Hz\n")
-            f.write(f"Normalization: Z-score\n\n")
+            f.write(f"Normalization: None (raw sensor values)\n\n")
 
             f.write("Train windows per activity:\n")
             for activity, count in sorted(train_activity_counts.items()):

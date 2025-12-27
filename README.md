@@ -70,7 +70,6 @@ python preprocessing.py --config datasets/har_demo_config.yaml
     - `subject1/walking/subject1_window_10_walking.csv`
     - `subject2/running/subject2_window_5_running.csv`
     - ...
-- `output/{dataset_name}/scaler.pkl` - Normalization scaler for later use
 - `output/{dataset_name}/preprocessing_summary.txt` - Statistics with train/test split info
 
 **What it does:**
