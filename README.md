@@ -11,7 +11,7 @@ Raw Sensor Data (CSV)
     ↓
 [Stage 1] Preprocessing → CSV Windows
     ↓
-[Stage 2] Feature Extraction → features.pkl + descriptions/
+[Stage 2] Feature Extraction → descriptions/
     ↓
 [Stage 3] Vector Indexing → Vector Database
     ↓
@@ -39,29 +39,27 @@ Each stage is run independently using its own script.
 **Script:** `preprocessing.py` (wrapper that calls provider's preprocess())
 
 **Command:**
+
 ```bash
 python preprocessing.py --config datasets/har_demo_config.yaml
 ```
 
 **Parameters:**
+
 - `--config`: Path to dataset configuration YAML file
 
 **Auto-generated paths:**
+
 - Output directory: `output/{dataset_name}/windows/`
 
 **How it works:**
+
 - The script calls `provider.preprocess(output_dir)`
 - Each dataset provider implements its own `preprocess()` method
 - Providers can use the `Preprocessor` utility class or implement completely custom logic
 
-**Why dataset-specific?**
-Different datasets have different preprocessing needs:
-- **HAR Demo**: Clean mobile data → simple normalization → standard windowing
-- **GOTOV**: Multi-sensor fusion → noise filtering → per-sensor normalization → larger windows
-- **UCI-HAR**: Already preprocessed → just windowing
-- **WISDM**: Heavy filtering needed → custom resampling → activity-specific windows
-
 **Outputs:**
+
 - `output/{dataset_name}/train-test-splits/` - Train/Test split directories
   - `train/`
     - `subject1/walking/subject1_window_0_walking.csv`
@@ -76,12 +74,11 @@ Different datasets have different preprocessing needs:
 - `output/{dataset_name}/preprocessing_summary.txt` - Statistics with train/test split info
 
 **What it does:**
+
 1. Loads raw CSV files via DatasetProvider
-2. Standardizes column names (timestamp, accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, mag_x, mag_y, mag_z, activity)
-3. Removes outliers (optional)
-4. Normalizes data (zscore/minmax/robust)
-5. Segments into overlapping windows (e.g., 200 samples with 50% overlap)
-6. **Splits into train/test sets (10% test per activity)**
+2. Provide the preprocessing of the dataset accordingly
+3. Segments into overlapping windows (e.g., 200 samples with 50% overlap)
+4. Splits into train/test sets
 
 ---
 
@@ -89,45 +86,45 @@ Different datasets have different preprocessing needs:
 
 **Purpose:** Calculate statistical features for each window and generate human-readable descriptions.
 
-**Script:** `generate_stats_new.py`
+**Script:** `generate_stats.py`
 
 **Command:**
+
 ```bash
 python generate_stats.py --config datasets/har_demo_config.yaml
 ```
 
 **Parameters:**
+
 - `--config`: Path to dataset configuration YAML file
 
-**Note:** Temporal segmentation (whole, start, mid, end) is always enabled as it's required for the hybrid search classifier.
 
 **Auto-generated paths:**
+
 - Train Input: `output/{dataset_name}/train-test-splits/train/`
 - Test Input: `output/{dataset_name}/train-test-splits/test/`
 - Train Output: `output/{dataset_name}/features/train/`
 - Test Output: `output/{dataset_name}/features/test/`
 
 **Outputs:**
+
 - `output/{dataset_name}/features/train/` - Training set features
   - `features.pkl` - Feature vectors (numpy arrays)
   - `descriptions/` - Human-readable text descriptions
-    - `window_0_activity_walking_stats.txt`
-    - `window_1_activity_running_stats.txt`
-    - ...
   - `feature_summary.txt` - Statistics
 - `output/{dataset_name}/features/test/` - Test set features (same structure)
 
 **What it does:**
-1. Uses dataset-specific sensor column mappings from config (e.g., `accel_x` vs `ankle_x`)
-2. For each window, calculates statistical features (mean, std, min, max, median, etc.)
-3. Computes features per sensor axis (x, y, z) and magnitude
-4. Segments window into temporal parts (whole, start, mid, end) for richer features
-5. Generates human-readable text descriptions of the features
+
+1. For each window, calculates a set statistical features (mean, std, min, max, median, etc.)
+2. Computes features per sensor axis (x, y, z)
+3. Segments window into temporal parts (whole, start, mid, end) for richer features
+4. Generates human-readable text descriptions of the features
 
 **Dataset-Specific Feature Extraction:**
 Each dataset knows how to extract features from its own column structure:
+
 - **HAR Demo**: Handled by `providers/har_demo/features.py` (extracts from `accel_x`, `gyro_y`, `mag_z`)
-- **GOTOV**: Handled by `providers/gotov/features.py` (extracts from `ankle_accel_x`, `wrist_gyro_y`, `chest_mag_z`)
 - **Your dataset**: Create `providers/your_dataset/features.py` with your column names
 
 No configuration needed - each provider's `features.py` defines which columns to extract!
@@ -141,6 +138,7 @@ No configuration needed - each provider's `features.py` defines which columns to
 **Script:** `timeseries_indexing.py`
 
 **Command:**
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 
@@ -148,28 +146,27 @@ python timeseries_indexing.py --config datasets/har_demo_config.yaml
 ```
 
 **Parameters:**
+
 - `--config`: Path to dataset configuration YAML file
 
 **Auto-generated paths:**
+
 - Input: `output/{dataset_name}/features/descriptions/`
 - Collection name: `{dataset_name}_har_collection`
-- Embedding model: `openai` (hardcoded)
+- Embedding model: `openai` 
 
 **Outputs:**
-- **ChromaDB:** `chroma_db/` directory with persistent database
-- **FAISS:** `faiss_db/{collection_name}.index` and `faiss_db/{collection_name}_metadata.json`
-- **Milvus:** Cloud storage or `milvus_db/` directory
+
+- **Milvus:** Cloud storage
 
 **What it does:**
+
 1. Reads all window description text files
 2. Generates embeddings for each description
 3. Indexes embeddings into vector database with metadata (activity, window_id)
 4. Creates similarity search index
 
-**Vector Database Options:**
-- **ChromaDB** (default): Local, persistent, easy to use
-- **FAISS**: Fast, supports CPU/GPU, good for large datasets
-- **Milvus/Zilliz**: Cloud-based, scalable, enterprise-ready
+
 
 ---
 
@@ -177,30 +174,20 @@ python timeseries_indexing.py --config datasets/har_demo_config.yaml
 
 **Purpose:** RAG-based activity classification using hybrid search with temporal segmentation and LLM reasoning.
 
-**Script:** `classifier_new.py`
+**Script:** `classifier.py`
 
 **Command:**
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 export ZILLIZ_CLOUD_URI="your-milvus-uri"
 export ZILLIZ_CLOUD_API_KEY="your-milvus-api-key"
 
-python classifier_new.py --config datasets/har_demo_config.yaml
-```
-
-**Advanced Options:**
-```bash
-# Use different LLM model
-python classifier_new.py --config datasets/har_demo_config.yaml --model gpt-4o
-
-# Adjust retrieval parameters
-python classifier_new.py --config datasets/har_demo_config.yaml --fewshot 50 --out-fewshot 30
-
-# Limit test samples for quick testing
-python classifier_new.py --config datasets/har_demo_config.yaml --max-samples 100
+python classifier.py --config datasets/har_demo_config.yaml
 ```
 
 **Parameters:**
+
 - `--config`: Path to dataset configuration YAML file (required)
 - `--model`: LLM model for classification (default: `gpt-4o-mini`)
 - `--fewshot`: Number of samples to retrieve per temporal segment (default: 30)
@@ -208,16 +195,19 @@ python classifier_new.py --config datasets/har_demo_config.yaml --max-samples 10
 - `--max-samples`: Maximum test samples to evaluate (default: all)
 
 **Auto-generated paths:**
+
 - Test descriptions: `output/{dataset_name}/features/descriptions/`
 - Collection name: `{dataset_name}_har_collection`
 - Output directory: `output/{dataset_name}/evaluation/`
 
 **Outputs:**
+
 - `output/{dataset_name}/evaluation/predictions.csv` - Labels and predictions
 - `output/{dataset_name}/evaluation/detailed_results.csv` - Full results with RAG metrics
 - Console output with accuracy, F1 score, and RAG hit rate
 
 **What it does:**
+
 1. For each test window:
    - Extracts temporal segments (whole, start, mid, end)
    - Generates embeddings for each segment
@@ -266,6 +256,7 @@ Create `datasets/my_dataset_config.yaml`:
 Create `providers/my_dataset/` with three files:
 
 **a) `providers/my_dataset/__init__.py`:**
+
 ```python
 """My Dataset Provider"""
 
@@ -275,6 +266,7 @@ __all__ = ['MyDatasetProvider']
 ```
 
 **b) `providers/my_dataset/provider.py`:**
+
 ```python
 """
 My Dataset Provider - Loads and preprocesses my custom HAR dataset.
@@ -335,6 +327,7 @@ class MyDatasetProvider(DatasetProvider):
 ```
 
 **c) `providers/my_dataset/features.py`:**
+
 ```python
 """
 My Dataset Feature Extraction
@@ -414,4 +407,3 @@ python classifier_new.py --config datasets/my_dataset_config.yaml
 All paths are automatically created as `output/my_dataset/{windows,features}/`
 
 ---
-
