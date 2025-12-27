@@ -1,0 +1,27 @@
+# HAR Demo Dataset Configuration
+# Minimal configuration - preprocessing is implemented in har_demo_provider.py
+
+dataset_name: "har_demo"
+description: "Human Activity Recognition Demo - Mobile App Dataset"
+
+# Data source configuration
+data_source:
+  type: "csv"
+  base_path: "/Users/hansi/Documents/RAG-HAR/har-demo/server/collected_data" # Contains subject folders (subject1, subject2, ...)
+  activities:
+    - walking
+    - running
+    - sitting
+    - standing
+
+# Feature extraction configuration (used by generate_stats.py)
+# Sensor columns are defined in providers/har_demo/features.py
+features:
+  statistics:
+    - mean
+    - std
+    - min
+    - max
+    - median
+    - p25
+    - p75
