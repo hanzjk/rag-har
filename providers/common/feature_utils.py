@@ -57,58 +57,38 @@ class FeatureExtractorUtils:
         stats_dict = {}
 
         for stat_name in stat_names:
-            if stat_name == 'mean':
-                stats_dict['mean'] = np.mean(x_arr)
-            elif stat_name == 'std':
-                stats_dict['std'] = np.std(x_arr)
-            elif stat_name == 'min':
-                stats_dict['min'] = np.min(x_arr)
-            elif stat_name == 'max':
-                stats_dict['max'] = np.max(x_arr)
-            elif stat_name == 'median':
-                stats_dict['median'] = np.median(x_arr)
-            elif stat_name == 'p25':
-                stats_dict['p25'] = np.percentile(x_arr, 25)
-            elif stat_name == 'p75':
-                stats_dict['p75'] = np.percentile(x_arr, 75)
-            elif stat_name == 'variance' or stat_name == 'var':
-                stats_dict['variance'] = np.var(x_arr)
-            elif stat_name == 'range':
-                stats_dict['range'] = np.max(x_arr) - np.min(x_arr)
-            elif stat_name == 'skewness' or stat_name == 'skew':
-                stats_dict['skewness'] = safe_skew(x_arr)
-            elif stat_name == 'kurtosis' or stat_name == 'kurt':
-                stats_dict['kurtosis'] = safe_kurtosis(x_arr)
-            elif stat_name == 'rms':
-                stats_dict['rms'] = np.sqrt(np.mean(x_arr**2))
-            elif stat_name == 'energy':
-                stats_dict['energy'] = np.sum(x_arr**2)
-            elif stat_name == 'zero_crossings':
-                stats_dict['zero_crossings'] = np.sum(np.diff(np.sign(x_arr)) != 0)
+            if stat_name == "mean":
+                stats_dict["mean"] = np.mean(x_arr)
+            elif stat_name == "std":
+                stats_dict["std"] = np.std(x_arr)
+            elif stat_name == "min":
+                stats_dict["min"] = np.min(x_arr)
+            elif stat_name == "max":
+                stats_dict["max"] = np.max(x_arr)
+            elif stat_name == "median":
+                stats_dict["median"] = np.median(x_arr)
+            elif stat_name == "p25":
+                stats_dict["p25"] = np.percentile(x_arr, 25)
+            elif stat_name == "p75":
+                stats_dict["p75"] = np.percentile(x_arr, 75)
+            elif stat_name == "variance" or stat_name == "var":
+                stats_dict["variance"] = np.var(x_arr)
+            elif stat_name == "range":
+                stats_dict["range"] = np.max(x_arr) - np.min(x_arr)
+            elif stat_name == "skewness" or stat_name == "skew":
+                stats_dict["skewness"] = safe_skew(x_arr)
+            elif stat_name == "kurtosis" or stat_name == "kurt":
+                stats_dict["kurtosis"] = safe_kurtosis(x_arr)
+            elif stat_name == "rms":
+                stats_dict["rms"] = np.sqrt(np.mean(x_arr**2))
+            elif stat_name == "energy":
+                stats_dict["energy"] = np.sum(x_arr**2)
+            elif stat_name == "zero_crossings":
+                stats_dict["zero_crossings"] = np.sum(np.diff(np.sign(x_arr)) != 0)
             else:
                 stats_dict[stat_name] = 0.0
 
         return stats_dict
-
-    @staticmethod
-    def compute_magnitude(df: pd.DataFrame, prefix: str) -> pd.Series:
-        """
-        Compute 3D magnitude for a sensor.
-
-        Args:
-            df: DataFrame with sensor data
-            prefix: Column prefix (e.g., 'accel', 'ankle_accel')
-
-        Returns:
-            Series with magnitude values
-        """
-        x_col = f'{prefix}_x'
-        y_col = f'{prefix}_y'
-        z_col = f'{prefix}_z'
-
-        if all(col in df.columns for col in [x_col, y_col, z_col]):
-            return np.sqrt(df[x_col]**2 + df[y_col]**2 + df[z_col]**2)
-        return pd.Series([0] * len(df))
 
     @staticmethod
     def split_temporal_segments(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
@@ -125,8 +105,8 @@ class FeatureExtractorUtils:
         segment_size = n_rows // 3
 
         return {
-            'whole': df,
-            'start': df[:segment_size],
-            'middle': df[segment_size:2*segment_size],
-            'end': df[2*segment_size:]
+            "whole": df,
+            "start": df[:segment_size],
+            "middle": df[segment_size : 2 * segment_size],
+            "end": df[2 * segment_size :],
         }

@@ -36,7 +36,6 @@ class HARDemoFeatureExtractor:
         feature_config = config.get('features', {})
 
         self.statistics = feature_config.get('statistics', ['mean', 'std', 'min', 'max', 'median', 'p25', 'p75'])
-        self.compute_magnitude = feature_config.get('magnitude', True)
         self.per_axis = feature_config.get('per_axis', True)
 
         # HAR Demo sensor columns
@@ -209,11 +208,6 @@ class HARDemoFeatureExtractor:
                             stats_str = ', '.join([f"{k}={v:.3f}" for k, v in stats_dict.items()])
                             description_parts.append(f"  {sensor_name} (axis {axis_idx}, {unit}): {stats_str}")
 
-                # Magnitude features (only add to feature vector, not description)
-                if self.compute_magnitude:
-                    magnitude = self.utils.compute_magnitude(segment_df, prefix)
-                    stats_dict = self.utils.compute_stats(magnitude, self.statistics)
-                    segment_features.extend(stats_dict.values())
 
             all_features.extend(segment_features)
             description_parts.append("")  # Empty line after each segment

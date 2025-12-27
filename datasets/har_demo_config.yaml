@@ -24,3 +24,17 @@ features:
     - median
     - p25
     - p75
+
+# Classification prompts configuration
+# If not specified, default prompts will be used
+prompts:
+  system_prompt: "Use semantic similarity to compare the candidate statistics with the retrieved samples and output the activity label that maximizes similarity; respond with only the class label from {classes} and nothing else."
+  user_prompt: |
+    You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
+
+    --- CANDIDATE ---
+    Time Series:
+    {candidate_series}
+
+    --- LABELED SAMPLES ---
+    {retrieved_data}

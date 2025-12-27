@@ -243,6 +243,48 @@ python classifier_new.py --config datasets/har_demo_config.yaml
 
 ---
 
+## Customizing Classification Prompts
+
+The system prompts used for LLM classification can be customized per dataset in the configuration file. This allows you to tailor the classification instructions based on dataset-specific characteristics.
+
+### Configuration
+
+Add a `prompts` section to your dataset config file:
+
+```yaml
+# Classification prompts configuration (optional)
+# If not specified, default prompts will be used
+prompts:
+  system_prompt: "Use semantic similarity to compare the candidate statistics with the retrieved samples and output the activity label that maximizes similarity; respond with only the class label from {classes} and nothing else."
+  user_prompt: |
+    You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
+
+    --- CANDIDATE ---
+    Time Series:
+    {candidate_series}
+
+    --- LABELED SAMPLES ---
+    {retrieved_data}
+```
+
+### Available Template Variables
+
+- **system_prompt:**
+  - `{classes}`: List of valid activity labels (automatically injected)
+
+- **user_prompt:**
+  - `{candidate_series}`: Formatted candidate time series data
+  - `{retrieved_data}`: Formatted retrieved sample data
+
+### How It Works
+
+1. The `PromptProvider` class (in `prompt_provider.py`) loads prompt templates from the dataset config
+2. During classification, prompts are dynamically generated using these templates
+3. If no prompts are specified in the config, sensible defaults are used
+4. This allows different datasets to use different classification strategies while maintaining the same codebase
+
+---
+
 ## Adding a New Dataset
 
 ### 1. Create Dataset Configuration

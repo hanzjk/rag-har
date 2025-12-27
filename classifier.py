@@ -26,6 +26,7 @@ import openai
 from tqdm import tqdm
 
 from dataset_provider import get_provider
+from prompt_provider import get_prompt_provider
 
 load_dotenv()
 
@@ -95,6 +96,9 @@ class RAGActivityClassifier:
         self.model = model
         self.fewshot = fewshot
         self.out_fewshot = out_fewshot
+
+        # Initialize prompt provider
+        self.prompt_provider = get_prompt_provider(self.config)
 
         # Initialize OpenAI
         self.openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -237,12 +241,10 @@ class RAGActivityClassifier:
         # Check if true label appears in retrieved samples (RAG quality metric)
         rag_hit = true_label in retrieved_labels
 
-        # Construct prompt for LLM
+        # Construct prompts using prompt provider
         retrieved_data = "\n\n".join(sections)
-        classes_str = str(self.valid_labels)
 
-        system_prompt = f"""Use semantic similarity to compare the candidate statistics with the retrieved samples and output the activity label that maximizes similarity; respond with only the class label from {classes_str} and nothing else."""
-
+        # Format candidate series
         series = (
             f"[Whole Segment]:\n{whole_stats}\n"
             f"[Start Segment]:\n{start_stats}\n"
@@ -250,7 +252,9 @@ class RAGActivityClassifier:
             f"[End Segment]:\n{end_stats}\n"
         )
 
-        user_prompt = f"""You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.\n\n--- CANDIDATE ---\nTime Series:\n{series}\n\n--- LABELED SAMPLES ---\n{retrieved_data}\n"""
+        # Generate system and user prompts
+        system_prompt = self.prompt_provider.get_system_prompt(self.valid_labels)
+        user_prompt = self.prompt_provider.get_user_prompt(series, retrieved_data)
 
         # Call LLM with retry logic
         success = False
