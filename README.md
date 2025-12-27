@@ -191,7 +191,6 @@ python classifier.py --config datasets/har_demo_config.yaml
 - `--model`: LLM model for classification (default: `gpt-4o-mini`)
 - `--fewshot`: Number of samples to retrieve per temporal segment (default: 30)
 - `--out-fewshot`: Final number of samples after hybrid reranking (default: 20)
-- `--max-samples`: Maximum test samples to evaluate (default: all)
 
 **Auto-generated paths:**
 
