@@ -98,7 +98,6 @@ python generate_stats.py --config datasets/har_demo_config.yaml
 
 - `--config`: Path to dataset configuration YAML file
 
-
 **Auto-generated paths:**
 
 - Train Input: `output/{dataset_name}/train-test-splits/train/`
@@ -141,6 +140,8 @@ No configuration needed - each provider's `features.py` defines which columns to
 
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
+export ZILLIZ_CLOUD_URI="your-milvus-uri"
+export ZILLIZ_CLOUD_API_KEY="your-milvus-api-key"
 
 python timeseries_indexing.py --config datasets/har_demo_config.yaml
 ```
@@ -153,7 +154,7 @@ python timeseries_indexing.py --config datasets/har_demo_config.yaml
 
 - Input: `output/{dataset_name}/features/descriptions/`
 - Collection name: `{dataset_name}_har_collection`
-- Embedding model: `openai` 
+- Embedding model: `openai`
 
 **Outputs:**
 
@@ -165,8 +166,6 @@ python timeseries_indexing.py --config datasets/har_demo_config.yaml
 2. Generates embeddings for each description
 3. Indexes embeddings into vector database with metadata (activity, window_id)
 4. Creates similarity search index
-
-
 
 ---
 

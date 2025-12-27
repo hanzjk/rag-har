@@ -29,6 +29,9 @@ from typing import Any, Dict, Iterable, List, Sequence, Union
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Suppress httpx logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 Row = Dict[str, Any]
 Rows = List[Row]
 Columns = Dict[str, Sequence[Any]]
@@ -473,7 +476,9 @@ class MultivariateTimeSeriesIndexer:
                     "stats_mid_text": data_list[i]["stats_mid_text"],
                     "stats_end_text": data_list[i]["stats_end_text"],
                     "activity_stats_emb": data_list[i]["activity_stats_emb"],
-                    "activity_stats_start_emb": data_list[i]["activity_stats_start_emb"],
+                    "activity_stats_start_emb": data_list[i][
+                        "activity_stats_start_emb"
+                    ],
                     "activity_stats_mid_emb": data_list[i]["activity_stats_mid_emb"],
                     "activity_stats_end_emb": data_list[i]["activity_stats_end_emb"],
                     "metadata": doc.metadata,
