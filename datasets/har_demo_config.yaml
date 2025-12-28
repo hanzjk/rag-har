@@ -12,6 +12,8 @@ data_source:
     - running
     - sitting
     - standing
+    - walking_upstairs
+    - walking_downstairs
 
 # Feature extraction configuration (used by generate_stats.py)
 # Sensor columns are defined in providers/har_demo/features.py

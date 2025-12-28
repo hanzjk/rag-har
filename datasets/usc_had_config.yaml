@@ -1,0 +1,100 @@
+# USC-HAD (USC Human Activity Dataset) Configuration
+# Preprocessing is implemented in providers/usc-had/provider.py
+
+dataset_name: "usc-had"
+description: "USC Human Activity Dataset - Smartphone accelerometer and gyroscope data with demographic metadata"
+
+# Data source configuration
+data_source:
+  folder_path: "USC-HAD"  # Directory containing Subject1-14 folders
+  num_subjects: 14  # Number of subjects (1-14)
+
+# Activity labels (12 activities)
+activities:
+  - walking_forward
+  - walking_left
+  - walking_right
+  - walking_upstairs
+  - walking_downstairs
+  - running_forward
+  - jumping
+  - sitting
+  - standing
+  - sleeping
+  - elevator_up
+  - elevator_down
+
+# Preprocessing configuration
+preprocessing:
+  window_size: 66        # Window size in samples (2 seconds at 33Hz after downsampling)
+  step_size: 66          # Step size in samples (66 for non-overlapping, adjust for overlap)
+  sampling_rate: 33      # Sampling rate in Hz (after downsampling from ~100Hz)
+  test_subjects: [13, 14]  # Subject IDs to use for testing
+  normalization: "zscore"  # Options: 'zscore', 'minmax100', 'revin', 'none'
+
+# Feature extraction configuration
+# Sensor columns: acc_{x,y,z}, gyro_{x,y,z}
+features:
+  method: "default"  # Options: 'default', 'comprehensive', 'structured'
+
+  # Statistics to compute (used by comprehensive method)
+  statistics:
+    - mean
+    - std
+    - min
+    - max
+    - median
+    - p25
+    - p75
+
+# Classification prompts configuration
+prompts:
+  system_prompt: |
+    You are a multi-class classifier for the USC-HAD dataset using tri-site acceleration and gyroscope sensory data summarized as statistics with enhanced demographic and motion characteristic information.
+    Following are the human activities and their IDs (labels for the classification task):
+        1: Walking forward
+        2: Walking left
+        3: Walking right
+        4: Walking upstairs
+        5: Walking downstairs
+        6: Running forward
+        7: Jumping up
+        8: Sitting
+        9: Standing
+        10: Sleeping
+        11: Elevator up
+        12: Elevator down
+
+    **Sensor Location**: Front-right-hip (consistent across all subjects)
+    **Sensor Orientation**: X-axis (gravity/up-down), Y-axis (walking direction/forward-back), Z-axis (lateral/side-to-side)
+
+    You are provided with enhanced information including:
+    - Subject Demographics: Age, gender, height, weight and other physical characteristics
+    - Motion Characteristics: Overall motion patterns, dominant axes, motion intensity and type
+    - Statistical Features: Time series data summarized using mean, standard deviation, minimum, maximum, median, 25th percentile and 75th percentile
+
+    Given a candidate query with enhanced demographics and motion characteristics, and a set of relevant labeled sample items (each containing enhanced information and summary statistics for accelerometer and gyroscope) for your context, classify the candidate into exactly one class from the above list.
+
+    IMPORTANT - The dataset is highly imbalanced. So sometimes the relevant labelled samples may contain more from a single class. But you should choose the class based on the patterns in the statistics, demographics, and motion characteristics - not based on the frequency of samples from a particular class.
+
+    You MUST analyze:
+    1. Subject demographics and how they might affect motion patterns
+    2. Overall motion characteristics and their alignment with activities
+    3. Statistical patterns across all sensors and segments (whole, start, mid, end)
+    4. Compare all these patterns with the candidate query to find the best matching class
+
+    Note the Sensor Orientation and Location mentioned above while making your decision. Consider how demographics (age, gender, physical characteristics) and motion patterns (dominant axis, intensity, type) relate to different activities.
+
+    Formulate strategies considering demographics, motion characteristics, and statistical patterns, then come to a final conclusion.
+    Your response should ONLY be the predicted class label (activity id) as a number. Do not include any analysis, reasoning, or JSON format.
+    You must respond with exactly one of these activity labels.
+
+  user_prompt: |
+    You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
+
+    --- CANDIDATE ---
+    Time Series:
+    {candidate_series}
+
+    --- LABELED SAMPLES ---
+    {retrieved_data}

@@ -1,0 +1,47 @@
+# GOTOV Activity Recognition Dataset Configuration
+# Preprocessing is implemented in providers/gotov/provider.py
+
+dataset_name: "gotov"
+description: "GOTOV Activity Recognition Dataset - Multi-sensor Body-Worn Accelerometers"
+
+# Data source configuration
+data_source:
+  dataset_dir: "Activity_Measurements"  # Directory containing GOTOV subject folders
+
+# Preprocessing configuration
+preprocessing:
+  window_size: 24       # Window size in samples
+  train_step: 12        # Step size for training (50% overlap)
+  test_step: 24         # Step size for testing (no overlap)
+
+  # Subject splits
+  exclude_subjects: [2, 3, 4, 12, 19, 23]  # Subjects to exclude from dataset
+  test_subjects: [5, 15, 30]                # Subjects for test set
+  val_subjects: [13, 21, 29]                # Subjects for validation set
+
+# Feature extraction configuration
+# Sensor columns: ankle_x, ankle_y, ankle_z, wrist_x, wrist_y, wrist_z, chest_x, chest_y, chest_z
+features:
+  statistics:
+    - mean
+    - std
+    - min
+    - max
+    - median
+    - p25
+    - p75
+    - peak_to_peak
+    - dominant_freq
+
+# Classification prompts configuration
+prompts:
+  system_prompt: "Use semantic similarity to compare the candidate statistics with the retrieved samples and output the activity label that maximizes similarity; respond with only the class label from {classes} and nothing else."
+  user_prompt: |
+    You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
+
+    --- CANDIDATE ---
+    Time Series:
+    {candidate_series}
+
+    --- LABELED SAMPLES ---
+    {retrieved_data}

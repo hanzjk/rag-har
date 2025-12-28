@@ -1,5 +1,5 @@
 """MHEALTH Dataset Provider"""
 
-from .provider import MHealthProvider
+from .provider import MHEALTHProvider
 
-__all__ = ['MHealthProvider']
+__all__ = ['MHEALTHProvider']

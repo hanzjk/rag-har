@@ -198,6 +198,11 @@ def get_provider(config_path: str) -> DatasetProvider:
     provider_registry = {
         "har_demo": ("providers.har_demo.provider", "HARDemoProvider"),
         "gotov": ("providers.gotov.provider", "GOTOVProvider"),
+        "skoda": ("providers.skoda.provider", "SkodaProvider"),
+        "hhar": ("providers.hhar.provider", "HHARProvider"),
+        "mhealth": ("providers.mhealth.provider", "MHEALTHProvider"),
+        "usc-had": ("providers.usc-had.provider", "USCHADProvider"),
+        "pamap2": ("providers.pamp2.provider", "PAMAP2Provider"),
         # Add more datasets here:
         # "my_dataset": ("providers.my_dataset.provider", "MyDatasetProvider"),
     }
