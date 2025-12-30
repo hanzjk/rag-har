@@ -22,7 +22,6 @@ class HARDemoFeatureExtractor:
     Knows how to extract features from HAR Demo's column structure:
     - accel_x, accel_y, accel_z
     - gyro_x, gyro_y, gyro_z
-    - mag_x, mag_y, mag_z
     """
 
     def __init__(self, config: Dict):
@@ -39,7 +38,7 @@ class HARDemoFeatureExtractor:
         self.per_axis = feature_config.get('per_axis', True)
 
         # HAR Demo sensor columns
-        self.sensor_columns = ['accel', 'gyro', 'mag']
+        self.sensor_columns = ['accel', 'gyro']
 
         self.utils = FeatureExtractorUtils()
 
@@ -105,7 +104,7 @@ class HARDemoFeatureExtractor:
             Path to saved features file
         """
         logger.info("HAR Demo Feature Extraction")
-        logger.info("Sensors: accel_x/y/z, gyro_x/y/z, mag_x/y/z")
+        logger.info("Sensors: accel_x/y/z, gyro_x/y/z,")
         logger.info("Temporal segmentation: whole, start, mid, end")
         logger.info("")
 
@@ -172,7 +171,6 @@ class HARDemoFeatureExtractor:
         sensor_metadata = {
             'accel': ('Acceleration', 'm/s²'),
             'gyro': ('Gyroscope', 'rad/s'),
-            'mag': ('Magnetometer', 'μT')
         }
 
         # Segment name mapping
@@ -232,7 +230,7 @@ class HARDemoFeatureExtractor:
             f.write(f"Total windows: {len(all_features)}\n")
             f.write(f"Feature dimension: {feature_dim}\n")
             f.write(f"Temporal segments: whole, start, mid, end\n")
-            f.write(f"Sensors: accel, gyro, mag\n\n")
+            f.write(f"Sensors: accel, gyro\n\n")
             f.write("Windows per activity:\n")
             for activity, count in sorted(activity_counts.items()):
                 f.write(f"  {activity}: {count}\n")

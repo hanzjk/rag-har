@@ -9,11 +9,8 @@ data_source:
   base_path: "/Users/hansi/Documents/RAG-HAR/har-demo/server/collected_data" # Contains subject folders (subject1, subject2, ...)
   activities:
     - walking
-    - running
     - sitting
     - standing
-    - walking_upstairs
-    - walking_downstairs
 
 # Feature extraction configuration (used by generate_stats.py)
 # Sensor columns are defined in providers/har_demo/features.py

@@ -60,9 +60,18 @@ class HARDemoProvider(DatasetProvider):
 
                 if activity_file.exists():
                     df = pd.read_csv(activity_file)
+                    
+                    # Omit first and last 4 seconds (200 samples at 50Hz)
+                    samples_to_omit = 200
+                    if len(df) > 2 * samples_to_omit:
+                        df = df.iloc[samples_to_omit:-samples_to_omit].reset_index(drop=True)
+                        logger.info(f"  {subject_name}/{activity}.csv: {len(df)} samples (after omitting first/last 4s)")
+                    else:
+                        logger.warning(f"  {subject_name}/{activity}.csv: {len(df)} samples - too short to omit edges, skipping file")
+                        continue
+                    
                     # Add subject identifier column
                     df['subject_id'] = subject_name
-                    logger.info(f"  {subject_name}/{activity}.csv: {len(df)} samples")
                     data[activity].append(df)
                 else:
                     logger.warning(f"  {subject_name}/{activity}.csv: not found")
