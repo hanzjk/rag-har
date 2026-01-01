@@ -26,23 +26,9 @@ class PromptProvider:
         self.dataset_name = config.get("dataset_name", "unknown")
         self.prompts_config = config.get("prompts", {})
 
-        # Load prompt templates from config or use defaults
-        self.system_template = self.prompts_config.get(
-            "system_prompt",
-            "Use semantic similarity to compare the candidate statistics with the retrieved samples and output the activity label that maximizes similarity; respond with only the class label from {classes} and nothing else.",
-        )
-
-        self.user_template = self.prompts_config.get(
-            "user_prompt",
-            """You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
-
---- CANDIDATE ---
-Time Series:
-{candidate_series}
-
---- LABELED SAMPLES ---
-{retrieved_data}""",
-        )
+        # Load prompt templates from config
+        self.system_template = self.prompts_config.get("system_prompt")
+        self.user_template = self.prompts_config.get("user_prompt")
 
         logger.info(f"Initialized prompt provider for dataset: {self.dataset_name}")
 

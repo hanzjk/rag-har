@@ -187,7 +187,7 @@ python classifier.py --config datasets/har_demo_config.yaml
 **Parameters:**
 
 - `--config`: Path to dataset configuration YAML file (required)
-- `--model`: LLM model for classification (default: `gpt-4o-mini`)
+- `--model`: LLM model for classification (default: `gpt-5-mini`)
 - `--fewshot`: Number of samples to retrieve per temporal segment (default: 30)
 - `--out-fewshot`: Final number of samples after hybrid reranking (default: 20)
 

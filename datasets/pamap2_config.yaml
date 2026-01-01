@@ -6,34 +6,34 @@ description: "PAMAP2 Physical Activity Monitoring - Multi-sensor IMU data from h
 
 # Data source configuration
 data_source:
-  folder_path: "PAMAP2_Dataset/Protocol"  # Directory containing subject*.dat files
-
-# Activity labels (20 activities with some IDs missing)
-activities:
-  - lying                # 1
-  - sitting              # 2
-  - standing             # 3
-  - walking              # 4
-  - running              # 5
-  - cycling              # 6
-  - nordic_walking       # 7
-  - watching_tv          # 9
-  - computer_work        # 10
-  - car_driving          # 11
-  - ascending_stairs     # 12
-  - descending_stairs    # 13
-  - vacuum_cleaning      # 16
-  - ironing              # 17
-  - folding_laundry      # 18
-  - house_cleaning       # 19
-  - playing_soccer       # 20
-  - rope_jumping         # 24
+  folder_path: "/Users/hansi/Downloads/pamap2+physical+activity+monitoring 2/PAMAP2_Dataset/Protocol" # Directory containing subject*.dat files
+  # Activity labels
+  activities:
+    - lying
+    - sitting
+    - standing
+    - walking
+    - running
+    - cycling
+    - nordic_walking
+    - ascending_stairs
+    - descending_stairs
+    - vacuum_cleaning
+    - ironing
+    - rope_jumping
 
 # Preprocessing configuration
 preprocessing:
-  window_size: 256       # Window size in samples (2.56 seconds at 100Hz)
-  step_size: 128         # Step size in samples (128 for 50% overlap)
-  sampling_rate: 100     # Sampling rate in Hz
+  window_size: 500 # Window size in samples (5 seconds at 100Hz)
+  step_size: 500 # Step size in samples (5 seconds for no overlap)
+  sampling_rate: 100 # Sampling rate in Hz
+
+# Train/Test split configuration
+train_test_split:
+  method: "one_subject_out" # Split method: one_subject_out
+  test_subject_id: "103" # Subject ID to use for test set
+  data_dir: "output/pamap2/windows" # Directory containing preprocessed CSV windows
+  output_dir: "output/pamap2/train-test-splits" # Output directory for train/test splits
 
 # Feature extraction configuration
 # Sensors: 3 IMUs (hand, chest, ankle)
@@ -50,10 +50,49 @@ features:
 
 # Classification prompts configuration
 prompts:
+  system_prompt2: |
+    ## Role
+    You are an expert in human activity recognition using sensor data from the PAMAP2 dataset.
+
+    ## Task
+    Classify a new instance of activity by matching its statistical sensor data summary to those from provided example data.
+
+    ## Activity Classes
+    Return exactly one of the following labels:
+    - 'lying'
+    - 'sitting'
+    - 'standing'
+    - 'walking'
+    - 'running'
+    - 'cycling'
+    - 'nordic_walking'
+    - 'ascending_stairs'
+    - 'descending_stairs'
+    - 'vacuum_cleaning'
+    - 'ironing'
+    - 'rope_jumping'
+
+    ## Output Format
+    Output only the activity label (single line, no extra text).
+
   system_prompt: |
+    You are a multi-class classifier for the Human Activity Monitoring dataset using tri-site IMU time series (hand, chest, ankle) summarized as statistics.
+    Following are the human activities and their IDs (labels for the classification task):
+
+    CLASSES
+    lying, sitting, standing, walking, running, cycling, nordic_walking, ascending_stairs, descending_stairs, vacuum_cleaning, ironing, rope_jumping
+
+    Above human activities were monitored using 3 IMU sensors placed on hand, chest and ankle. Each sensor captures 3-axis accelerometer, gyroscope and magnetometer data. The time series data from each sensor is summarized using the following statistics: mean, standard deviation, minimum, maximum, median, 25th percentile and 75th percentile. 
+    Given a candidate query and a set of relevant labeled sample items (each containing summary statistics for hand, chest, and ankle sensors) for your context narrowing down the possible activities you need to classify into, classify the candidate into exactly one class from the above list.
+    However, IMPORTANT - The dataset is highly imbalanced. So sometimes the relevant labelled samples may contain more from a single class. But you should choose the class based on the patterns in the statistics and not based on the frequency of samples from a particular class.
+    You MUST analyse all the given samples and compare the patterns in the statistics with the candidate query before making a decision. 
+        
+    Your output should be only the activity label from the above list, on a single line. No explanations or extra text.
+
+  system_prompt1: |
     You are a multi-class classifier for the PAMAP2 Physical Activity Monitoring dataset using tri-site IMU raw time series (hand, chest, ankle).
     CLASSES
-    [1, 2, 3, 4, 5, 6, 7, 12, 13, 16, 17, 24]
+    [lying, sitting, standing, walking, running, cycling, nordic_walking, ascending_stairs, descending_stairs, vacuum_cleaning, ironing, rope_jumping]
 
     TASK
     Given a candidate item and a set of labeled sample items, each with raw tri-site IMU sequences and their activity label, classify the candidate into exactly one class from CLASSES.
@@ -70,8 +109,8 @@ prompts:
     - <sensor> ∈ acc, gyro, mag
     - <axis> ∈ x, y, z
 
-    Samples include a header line: "Activity Id: <label>" where label ∈ CLASSES.
-    Candidate does NOT include an Activity Id.
+    Samples include a header line: "Activity Label: <label>" where label ∈ CLASSES.
+    Candidate does NOT include an Activity Label.
 
     Example of a single stat line (your inputs will follow this style):
     Acceleration (axis 1, m/s²): mean=-0.004, std=0.324, min=-0.672, max=3.265, median=-0.055, p25=-0.138, p75=0.056
@@ -120,7 +159,7 @@ prompts:
     • Small axis naming or sign differences shouldn't change the decision if the pattern of variability and dominance aligns.
 
     OUTPUT
-    • Return exactly one class ID from CLASSES.
+    • Return exactly one class label from CLASSES.
     • Output the label only, on a single line. No explanations or extra text.
 
     POLICY

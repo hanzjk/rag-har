@@ -158,13 +158,14 @@ class PAMAP2Provider(DatasetProvider):
         3. Keep only acc16, gyro, mag columns
         4. Remove rows with NaN values
         5. Create sliding windows
-        6. Save windows as CSV files
+        6. Train/test split (one-subject-out)
+        7. Save windows as CSV files
 
         Args:
             output_dir: Directory to save preprocessed windows
 
         Returns:
-            Path to saved windows directory
+            Path to saved train-test-splits directory
         """
         logger.info("="*60)
         logger.info("PAMAP2 PREPROCESSING")
@@ -208,32 +209,75 @@ class PAMAP2Provider(DatasetProvider):
         window_size = self.config['preprocessing']['window_size']
         step_size = self.config['preprocessing'].get('step_size', window_size)
 
-        total_windows = 0
+        all_windows = []
         for subject_id, data in tqdm(subjects_clean.items(), desc="Processing subjects"):
             windows = self._create_sliding_windows(data, subject_id, window_size, step_size)
 
             if windows:
-                self._save_windows(windows, subject_id, output_path)
-                total_windows += len(windows)
+                all_windows.extend(windows)
             else:
                 logger.warning(f"No valid windows created for subject {subject_id}")
 
-        # Save summary
-        self._save_summary(output_path, total_windows)
+        logger.info(f"  Total windows created: {len(all_windows)}")
 
-        logger.info("")
-        logger.info(f"✓ Total windows created: {total_windows}")
-        logger.info(f"✓ Output: {output_path}")
+        # Step 4: Train/test split (one-subject-out)
+        split_config = self.config.get('train_test_split', {})
+        test_subject_id = split_config.get('test_subject_id')
 
-        return str(output_path)
+        if test_subject_id:
+            logger.info(f"Step 4: Creating one-subject-out split (test subject: {test_subject_id})...")
+            train_windows, test_windows = self._split_one_subject_out(all_windows, test_subject_id)
+
+            # Step 5: Save windows
+            logger.info("Step 5: Saving windows...")
+            train_test_dir = output_path / 'train-test-splits'
+            train_test_dir.mkdir(parents=True, exist_ok=True)
+
+            self._save_split_windows(train_windows, train_test_dir, 'train')
+            self._save_split_windows(test_windows, train_test_dir, 'test')
+
+            # Save summary
+            self._save_split_summary(train_windows, test_windows, output_path, test_subject_id)
+
+            logger.info("")
+            logger.info(f"✓ Train windows: {len(train_windows)}")
+            logger.info(f"✓ Test windows: {len(test_windows)}")
+            logger.info(f"✓ Output: {train_test_dir}")
+
+            return str(train_test_dir)
+        else:
+            logger.warning("No test_subject_id specified in config. Saving all windows without split...")
+            # Save windows without split
+            windows_dir = output_path / 'windows'
+            windows_dir.mkdir(exist_ok=True)
+
+            for window_data, window_idx, activity_id, subject_id in all_windows:
+                activity_name = self.activity_map.get(activity_id, f"activity_{activity_id}")
+                subject_dir = windows_dir / f"subject{subject_id}"
+                subject_dir.mkdir(exist_ok=True)
+
+                filename = f"subject{subject_id}_window{window_idx:04d}_activity{activity_id}_{activity_name}.csv"
+                filepath = subject_dir / filename
+
+                window_data_copy = window_data.copy()
+                window_data_copy['subject_id'] = subject_id
+                window_data_copy['window_index'] = window_idx
+                window_data_copy['activity_name'] = activity_name
+                window_data_copy.to_csv(filepath, index=False)
+
+            self._save_summary(output_path, len(all_windows))
+            logger.info(f"✓ Total windows: {len(all_windows)}")
+            logger.info(f"✓ Output: {windows_dir}")
+
+            return str(windows_dir)
 
     def _create_sliding_windows(self, data: pd.DataFrame, subject_id: str,
-                               window_size: int, step_size: int) -> List[Tuple[pd.DataFrame, int, int]]:
+                               window_size: int, step_size: int) -> List[Tuple[pd.DataFrame, int, int, str]]:
         """
         Create sliding windows from the data.
 
         Returns:
-            List of tuples: (window_data, window_index, activity_id)
+            List of tuples: (window_data, window_index, activity_id, subject_id)
         """
         windows = []
 
@@ -256,25 +300,64 @@ class PAMAP2Provider(DatasetProvider):
                 unique_activities = window_data['activity_id'].unique()
                 if len(unique_activities) == 1:
                     window_index = len(windows)
-                    windows.append((window_data, window_index, int(activity_id)))
+                    windows.append((window_data, window_index, int(activity_id), subject_id))
                 else:
                     logger.debug(f"Skipping mixed window for subject {subject_id}")
                     continue
 
         return windows
 
-    def _save_windows(self, windows: List[Tuple[pd.DataFrame, int, int]],
-                     subject_id: str, output_path: Path):
-        """Save each window as a separate CSV file."""
-        subject_dir = output_path / f"subject{subject_id}"
-        subject_dir.mkdir(parents=True, exist_ok=True)
+    def _split_one_subject_out(self, windows: List[Tuple], test_subject_id: str) -> Tuple[List[Tuple], List[Tuple]]:
+        """
+        Split windows into train and test using one-subject-out method.
 
-        for window_data, window_idx, activity_id in windows:
+        Args:
+            windows: List of tuples (window_data, window_idx, activity_id, subject_id)
+            test_subject_id: Subject ID to use for test set
+
+        Returns:
+            Tuple of (train_windows, test_windows)
+        """
+        train_windows = []
+        test_windows = []
+
+        for window in windows:
+            window_data, window_idx, activity_id, subject_id = window
+
+            if subject_id == test_subject_id:
+                test_windows.append(window)
+            else:
+                train_windows.append(window)
+
+        logger.info(f"  Train: {len(train_windows)} windows (excluding subject {test_subject_id})")
+        logger.info(f"  Test: {len(test_windows)} windows (subject {test_subject_id} only)")
+
+        return train_windows, test_windows
+
+    def _save_split_windows(self, windows: List[Tuple], output_path: Path, split_name: str):
+        """
+        Save windows to train or test split with activity-based folder structure.
+
+        Args:
+            windows: List of tuples (window_data, window_idx, activity_id, subject_id)
+            output_path: Base output path (e.g., train-test-splits/S101_out)
+            split_name: 'train' or 'test'
+        """
+        split_dir = output_path / split_name
+        split_dir.mkdir(exist_ok=True)
+
+        activity_counts = {}
+
+        for window_data, window_idx, activity_id, subject_id in tqdm(windows, desc=f"  Saving {split_name} windows"):
             activity_name = self.activity_map.get(activity_id, f"activity_{activity_id}")
+
+            # Create activity folder
+            activity_dir = split_dir / activity_name
+            activity_dir.mkdir(exist_ok=True)
 
             # Create filename
             filename = f"subject{subject_id}_window{window_idx:04d}_activity{activity_id}_{activity_name}.csv"
-            filepath = subject_dir / filename
+            filepath = activity_dir / filename
 
             # Add metadata columns
             window_data_copy = window_data.copy()
@@ -285,7 +368,59 @@ class PAMAP2Provider(DatasetProvider):
             # Save to CSV
             window_data_copy.to_csv(filepath, index=False)
 
-        logger.debug(f"Saved {len(windows)} windows for subject {subject_id}")
+            # Update counts
+            activity_counts[activity_name] = activity_counts.get(activity_name, 0) + 1
+
+        logger.info(f"  Saved {len(windows)} {split_name} windows")
+        for activity, count in sorted(activity_counts.items()):
+            logger.info(f"    {activity}: {count}")
+
+    def _save_split_summary(self, train_windows: List[Tuple], test_windows: List[Tuple],
+                           output_path: Path, test_subject_id: str):
+        """Save preprocessing summary with train/test split information."""
+        summary_file = output_path / f'preprocessing_summary_S{test_subject_id}_out.txt'
+
+        # Count activities for train
+        train_activity_counts = {}
+        for _, _, activity_id, _ in train_windows:
+            activity_name = self.activity_map.get(activity_id, f"activity_{activity_id}")
+            train_activity_counts[activity_name] = train_activity_counts.get(activity_name, 0) + 1
+
+        # Count activities for test
+        test_activity_counts = {}
+        for _, _, activity_id, _ in test_windows:
+            activity_name = self.activity_map.get(activity_id, f"activity_{activity_id}")
+            test_activity_counts[activity_name] = test_activity_counts.get(activity_name, 0) + 1
+
+        window_size = self.config['preprocessing']['window_size']
+        step_size = self.config['preprocessing'].get('step_size', window_size)
+        sampling_rate = self.config['preprocessing']['sampling_rate']
+        overlap_pct = int((1 - step_size / window_size) * 100)
+
+        with open(summary_file, 'w') as f:
+            f.write("PAMAP2 Preprocessing Summary\n")
+            f.write("="*40 + "\n\n")
+            f.write(f"Split method: One-Subject-Out\n")
+            f.write(f"Test subject: {test_subject_id}\n\n")
+            f.write(f"Total windows: {len(train_windows) + len(test_windows)}\n")
+            f.write(f"Train windows: {len(train_windows)}\n")
+            f.write(f"Test windows: {len(test_windows)}\n\n")
+
+            f.write(f"Window size: {window_size} samples ({window_size/sampling_rate:.2f} seconds at {sampling_rate}Hz)\n")
+            f.write(f"Step size: {step_size} samples ({overlap_pct}% overlap)\n")
+            f.write(f"Sampling rate: {sampling_rate} Hz\n\n")
+            f.write("Sensors: Hand, Chest, Ankle\n")
+            f.write("Data: acc16 (3-axis), gyro (3-axis), mag (3-axis)\n\n")
+
+            f.write("Train windows per activity:\n")
+            for activity, count in sorted(train_activity_counts.items()):
+                f.write(f"  {activity}: {count}\n")
+
+            f.write("\nTest windows per activity:\n")
+            for activity, count in sorted(test_activity_counts.items()):
+                f.write(f"  {activity}: {count}\n")
+
+        logger.info(f"  Saved summary to {summary_file}")
 
     def _save_summary(self, output_path: Path, total_windows: int):
         """Save preprocessing summary."""

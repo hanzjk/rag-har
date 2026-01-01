@@ -88,8 +88,6 @@ class PAMAP2FeatureExtractor:
 
                 # Save description
                 subject_id = df['subject_id'].iloc[0] if 'subject_id' in df.columns else 'unknown'
-                out_dir = desc_dir / f"subject{subject_id}"
-                out_dir.mkdir(exist_ok=True)
 
                 # Generate output filename
                 activity_name = df['activity_name'].iloc[0] if 'activity_name' in df.columns else 'unknown'
@@ -97,8 +95,8 @@ class PAMAP2FeatureExtractor:
                 activity_id = df['activity_id'].iloc[0] if 'activity_id' in df.columns else '0'
 
                 safe_activity_name = activity_name.replace(" ", "_").replace("/", "_")
-                out_filename = f"activity{int(activity_id)}_{safe_activity_name}_subject{subject_id}_window{int(window_idx):04d}_stat.txt"
-                out_file = out_dir / out_filename
+                out_filename = f"window_{int(window_idx)}_activity_{safe_activity_name}_stats.txt"
+                out_file = desc_dir / out_filename
 
                 # Write description
                 with open(out_file, 'w') as f:
@@ -195,7 +193,7 @@ class PAMAP2FeatureExtractor:
                     continue
 
                 # Compute statistics
-                stats = self.feature_utils.compute_statistics(
+                stats = self.feature_utils.compute_stats(
                     data,
                     self.feature_config.get('statistics', ['mean', 'std', 'min', 'max', 'median', 'p25', 'p75'])
                 )

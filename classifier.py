@@ -157,6 +157,7 @@ class RAGActivityClassifier:
             content = f.read()
 
         # Extract temporal segments
+        print(f"DEBUG: Extracting segments for window {window_id}")
         segments = extract_sensor_sections(content)
         whole_stats = segments["whole"]
         start_stats = segments["start"]
@@ -164,10 +165,12 @@ class RAGActivityClassifier:
         end_stats = segments["end"]
 
         # Generate embeddings for each segment
+        print(f"DEBUG: Generating embeddings for window {window_id}...")
         stats_emb = self.embeddings.embed_query(str(whole_stats))
         start_stats_emb = self.embeddings.embed_query(str(start_stats))
         mid_stats_emb = self.embeddings.embed_query(str(mid_stats))
         end_stats_emb = self.embeddings.embed_query(str(end_stats))
+        print(f"DEBUG: Embeddings generated for window {window_id}")
 
         # Create ANN search requests for each segment
         req_1 = AnnSearchRequest(
@@ -196,20 +199,42 @@ class RAGActivityClassifier:
         )
 
         # Hybrid search with weighted ranker
-        docs = self.milvus_client.hybrid_search(
-            collection_name=self.collection_name,
-            output_fields=[
-                "text",
-                "timeseries_metadata",
-                "stats_whole_text",
-                "stats_start_text",
-                "stats_mid_text",
-                "stats_end_text",
-            ],
-            reqs=[req_1, req_2, req_3, req_4],
-            limit=self.out_fewshot,
-            ranker=WeightedRanker(0.4, 0.2, 0.2, 0.2),
-        )
+        print(f"DEBUG: Performing hybrid search for window {window_id}...")
+        try:
+            docs = self.milvus_client.hybrid_search(
+                collection_name=self.collection_name,
+                output_fields=[
+                    "text",
+                    "timeseries_metadata",
+                    "stats_whole_text",
+                    "stats_start_text",
+                    "stats_mid_text",
+                    "stats_end_text",
+                ],
+                reqs=[req_1, req_2, req_3, req_4],
+                limit=self.out_fewshot,
+                ranker=WeightedRanker(0.25, 0.25, 0.25, 0.25),
+            )
+            print(f"DEBUG: Hybrid search completed for window {window_id}")
+        except Exception as e:
+            print(f"ERROR: Hybrid search failed for window {window_id}: {e}")
+            print(f"Retrying in 5 seconds...")
+            time.sleep(5)
+            docs = self.milvus_client.hybrid_search(
+                collection_name=self.collection_name,
+                output_fields=[
+                    "text",
+                    "timeseries_metadata",
+                    "stats_whole_text",
+                    "stats_start_text",
+                    "stats_mid_text",
+                    "stats_end_text",
+                ],
+                reqs=[req_1, req_2, req_3, req_4],
+                limit=self.out_fewshot,
+                ranker=WeightedRanker(0.4, 0.2, 0.2, 0.2),
+            )
+            print(f"DEBUG: Hybrid search retry succeeded for window {window_id}")
 
         # Process retrieved documents
         retrieved_labels = []
@@ -222,12 +247,7 @@ class RAGActivityClassifier:
                 # Extract activity label from metadata
                 # Handle different metadata structures
                 metadata = entity.get("timeseries_metadata", {})
-                if isinstance(metadata, dict):
-                    sample_label = metadata.get("activity_id") or metadata.get(
-                        "activity", "unknown"
-                    )
-                else:
-                    sample_label = "unknown"
+                sample_label = metadata.get("activity_id")
 
                 retrieved_labels.append(sample_label)
                 sections.append(
@@ -257,8 +277,11 @@ class RAGActivityClassifier:
         user_prompt = self.prompt_provider.get_user_prompt(series, retrieved_data)
 
         # Call LLM with retry logic
+        print(f"DEBUG: Calling LLM (model={self.model}) for window {window_id}...")
         success = False
-        while not success:
+        retry_count = 0
+        max_retries = 3
+        while not success and retry_count < max_retries:
             try:
                 response = self.openai_client.beta.chat.completions.parse(
                     model=self.model,
@@ -267,15 +290,26 @@ class RAGActivityClassifier:
                         {"role": "user", "content": user_prompt},
                     ],
                     response_format=ActivityPrediction,
+                    timeout=60.0,  # 60 second timeout
                 )
                 prediction = response.choices[0].message.parsed.activity_label
                 success = True
-            except openai.RateLimitError:
-                print("Rate limit reached. Waiting 65 seconds...")
+                print(f"DEBUG: LLM prediction for window {window_id}: {prediction}")
+            except openai.RateLimitError as e:
+                print(f"Rate limit reached: {e}. Waiting 65 seconds...")
                 time.sleep(65)
+                retry_count += 1
             except Exception as e:
-                print(f"OpenAI API error: {e}. Waiting 10 seconds...")
-                time.sleep(10)
+                print(
+                    f"ERROR: OpenAI API error (retry {retry_count+1}/{max_retries}): {type(e).__name__}: {e}"
+                )
+                retry_count += 1
+                if retry_count < max_retries:
+                    print(f"Waiting 10 seconds before retry...")
+                    time.sleep(10)
+                else:
+                    print(f"Max retries reached. Skipping window {window_id}")
+                    raise
 
         # Display results for this sample
         retrieved_labels_display = [str(label) for label in retrieved_labels]
@@ -316,6 +350,7 @@ class RAGActivityClassifier:
         # Shuffle for random sampling
         random.seed(42)
         random.shuffle(file_list)
+        file_list = file_list[:100]
 
         print(f"\nEvaluating on {len(file_list)} test samples...")
         print(f"Test descriptions: {test_descriptions_dir}")
@@ -396,7 +431,7 @@ def main():
     parser.add_argument(
         "--out-fewshot",
         type=int,
-        default=10,
+        default=15,
         help="Final number of samples after reranking (default: 10)",
     )
 
