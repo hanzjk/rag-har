@@ -74,19 +74,10 @@ class USCHADFeatureExtractor:
         logger.info("")
 
         # Create output directories
-        train_desc_dir = output_path / f'train_descriptions_{self.method}'
-        test_desc_dir = output_path / f'test_descriptions_{self.method}'
+        train_desc_dir = output_path / 'train_descriptions'
+        test_desc_dir = output_path / 'test_descriptions'
         train_desc_dir.mkdir(parents=True, exist_ok=True)
         test_desc_dir.mkdir(parents=True, exist_ok=True)
-
-        # Create subject directories
-        for train_file in train_files:
-            subject_dir = train_file.parent.name
-            (train_desc_dir / subject_dir).mkdir(exist_ok=True)
-
-        for test_file in test_files:
-            subject_dir = test_file.parent.name
-            (test_desc_dir / subject_dir).mkdir(exist_ok=True)
 
         # Process all windows
         logger.info("Processing windows...")
@@ -121,17 +112,20 @@ class USCHADFeatureExtractor:
                 else:
                     base_output_dir = test_desc_dir
 
-                # Save description
-                subject_dir = file_path.parent.name
-                out_dir = base_output_dir / subject_dir
-                out_dir.mkdir(exist_ok=True)
+                # Parse filename: subject{id}_window{idx}_activity{num}_{name}.csv
+                filename = file_path.stem
+                parts = filename.split('_', 3)
+                if len(parts) >= 4:
+                    window_idx = parts[1].replace('window', '')
+                    activity_name = parts[3]  # Everything after "activity{num}_"
 
-                # Generate output filename
-                activity_name = df['activity_name'].iloc[0]
-                safe_activity_name = activity_name.replace(" ", "_").replace("/", "_")
-                window_name = file_path.stem  # Remove .csv extension
-                out_filename = f"{window_name}_{safe_activity_name}_stats.txt"
-                out_file = out_dir / out_filename
+                    # Output format: window_{idx}_activity_{name}_stats.txt
+                    out_filename = f"window_{window_idx}_activity_{activity_name}_stats.txt"
+                else:
+                    # Fallback
+                    out_filename = f"{filename}_stats.txt"
+
+                out_file = base_output_dir / out_filename
 
                 # Write description
                 with open(out_file, 'w') as f:

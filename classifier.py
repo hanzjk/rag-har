@@ -350,7 +350,6 @@ class RAGActivityClassifier:
         # Shuffle for random sampling
         random.seed(42)
         random.shuffle(file_list)
-        file_list = file_list[:100]
 
         print(f"\nEvaluating on {len(file_list)} test samples...")
         print(f"Test descriptions: {test_descriptions_dir}")

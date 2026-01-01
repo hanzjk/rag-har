@@ -139,7 +139,7 @@ class SkodaProvider(DatasetProvider):
 
         # Step 3: Segment into windows
         logger.info("Step 3: Segmenting into windows...")
-        train_test_dir = output_path / 'train_test_splits'
+        train_test_dir = output_path / 'train-test-splits'
         train_test_dir.mkdir(exist_ok=True)
 
         train_dir = train_test_dir / 'train'
@@ -185,8 +185,16 @@ class SkodaProvider(DatasetProvider):
                 logger.info(f"  Skipping null class: {label}")
                 continue
 
+            # Clean activity name
+            activity_name = str(label).replace('labels_', '').replace('.', '_')
+
+            # Create activity folder
+            activity_dir = out_dir / activity_name
+            activity_dir.mkdir(exist_ok=True)
+
             group = group.reset_index(drop=True)
             label_windows = 0
+            window_idx = 0
 
             for i in tqdm(range(0, len(group) - window + 1, step),
                          desc=f'  Processing {label}', leave=False):
@@ -194,10 +202,13 @@ class SkodaProvider(DatasetProvider):
 
                 # Only save if all samples in window have same label
                 if window_df['label'].nunique() == 1:
-                    out_path = out_dir / f'{label}_window_{i}.csv'
+                    # New filename format: window_{idx}_activity_{name}.csv
+                    filename = f'window_{window_idx}_activity_{activity_name}.csv'
+                    out_path = activity_dir / filename
                     window_df.to_csv(out_path, index=False)
                     label_windows += 1
                     window_count += 1
+                    window_idx += 1
 
             logger.info(f"  {label}: {label_windows} windows")
 

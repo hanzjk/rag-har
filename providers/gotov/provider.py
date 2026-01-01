@@ -195,7 +195,7 @@ class GOTOVProvider(DatasetProvider):
         # Step 3: Process all subjects with normalization and segmentation
         logger.info("Step 3: Normalizing and segmenting data...")
 
-        train_test_dir = output_path / 'train_test_splits'
+        train_test_dir = output_path / 'train-test-splits'
         train_dir = train_test_dir / 'train'
         test_dir = train_test_dir / 'test'
         val_dir = train_test_dir / 'validation'
@@ -283,7 +283,7 @@ class GOTOVProvider(DatasetProvider):
 
     def _save_normalization_stats(self, stats: Dict, output_dir: Path):
         """Save normalization statistics to a JSON file."""
-        stats_path = output_dir / 'train_test_splits' / 'normalization_stats.json'
+        stats_path = output_dir / 'train-test-splits' / 'normalization_stats.json'
         stats_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(stats_path, 'w') as f:
@@ -294,7 +294,8 @@ class GOTOVProvider(DatasetProvider):
     def _save_windows(self, df: pd.DataFrame, subject_id: int, out_dir: Path,
                      window_size: int, step_size: int, split_type: str = "train"):
         """
-        Split dataframe into windows and save only those with a single label.
+        Split dataframe into windows and save in activity-based folders.
+        Uses PAMAP2-style structure: split/activity_name/filename.csv
 
         Args:
             df: DataFrame to segment
@@ -316,7 +317,15 @@ class GOTOVProvider(DatasetProvider):
             if len(window) == window_size:
                 unique_labels = window['labels'].unique()
                 if len(unique_labels) == 1:
-                    out_path = out_dir / f"subject{subject_id}_window{i}.csv"
+                    activity_name = str(unique_labels[0]).replace(' ', '_').replace('/', '_')
+
+                    # Create activity-based folder
+                    activity_dir = out_dir / activity_name
+                    activity_dir.mkdir(exist_ok=True)
+
+                    # New filename format: subject{id}_window{num}_activity_{name}.csv
+                    filename = f"subject{subject_id}_window{i}_activity_{activity_name}.csv"
+                    out_path = activity_dir / filename
                     window.to_csv(out_path, index=False)
                     saved += 1
                 else:

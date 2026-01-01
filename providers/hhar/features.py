@@ -133,16 +133,8 @@ class HHARFeatureExtractor:
                 # Generate description
                 description = self._generate_description(df)
 
-                # Prepare output directory and filename
-                # Maintain the same directory structure as input
-                rel_path = file_path.relative_to(data_root)
-                rel_dir = rel_path.parent
-
-                out_dir = out_root / rel_dir
-                out_dir.mkdir(parents=True, exist_ok=True)
-
-                # Create output filename
-                out_file = out_dir / f"user_{user}_device_{device}_activity{activity_id}_{activity_label}_window{window_name}_stat.txt"
+                # Output format: window_{num}_activity_{name}_stats.txt
+                out_file = out_root / f"window_{window_name}_activity_{activity_label}_stats.txt"
 
                 # Save description
                 with open(out_file, "w") as f:

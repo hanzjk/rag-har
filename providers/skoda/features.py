@@ -60,22 +60,22 @@ class SkodaFeatureExtractor:
             logger.warning(f"Directory not found: {windows_path}")
             return windows
 
-        # Load all CSV files
-        for csv_file in sorted(windows_path.glob("*.csv")):
-            # Parse filename: labels_X.X_window_Y.csv
+        # Load all CSV files (new format: window_{idx}_activity_{name}.csv)
+        for csv_file in sorted(windows_path.rglob("window_*.csv")):
             filename = csv_file.stem
-            parts = filename.split('_window_')
 
-            if len(parts) == 2:
-                label = parts[0]  # e.g., "labels_1.0"
+            # Parse: window_{idx}_activity_{name}
+            parts = filename.split('_', 3)
+            if len(parts) >= 4:
                 window_id = int(parts[1])
+                activity_name = parts[3]  # Everything after "activity_"
 
                 # Load CSV data
                 df = pd.read_csv(csv_file)
 
                 windows.append({
                     'window_id': window_id,
-                    'label': label,
+                    'activity_name': activity_name,
                     'split': split_name,
                     'data': df,
                     'filename': csv_file.name
@@ -130,6 +130,7 @@ class SkodaFeatureExtractor:
     def _process_windows(self, windows: List[Dict], descriptions_dir: Path):
         """
         Process windows and save their descriptions.
+        Uses PAMAP2-style output: window_{num}_activity_{name}_stats.txt
 
         Args:
             windows: List of window dictionaries
@@ -137,17 +138,14 @@ class SkodaFeatureExtractor:
         """
         for window in tqdm(windows, desc="Extracting features", leave=False):
             window_id = window['window_id']
-            label = window['label']
+            activity_name = window['activity_name']
             df = window['data']
-            filename = window['filename']
 
             # Extract features with temporal segmentation and generate description
-            description = self._generate_description(df, label)
+            description = self._generate_description(df, activity_name)
 
-            # Save description using same naming as original: activity_FILENAME_stats.txt
-            # Extract base name from CSV filename
-            base_name = filename.replace('.csv', '')
-            desc_file = descriptions_dir / f"activity_{base_name}_stats.txt"
+            # Output format: window_{num}_activity_{name}_stats.txt
+            desc_file = descriptions_dir / f"window_{window_id}_activity_{activity_name}_stats.txt"
 
             with open(desc_file, 'w') as f:
                 f.write(description)

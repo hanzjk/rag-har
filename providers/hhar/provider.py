@@ -342,22 +342,25 @@ class HHARProvider(DatasetProvider):
             split: 'train' or 'test'
             output_dir: Output directory
         """
-        user_device_dir = output_dir / split / f"user_{user}" / f"device_{device}"
-        user_device_dir.mkdir(parents=True, exist_ok=True)
-
         window_size = self.config['preprocessing']['window_size']
         overlap = self.config['preprocessing'].get('overlap', 0.5)
         step_size = int(window_size * (1 - overlap))
 
         for window_data, window_idx, activity_name, activity_id in windows:
-            # Create filename
+            # Create activity-based directory
+            activity_dir = output_dir / split / activity_name
+            activity_dir.mkdir(parents=True, exist_ok=True)
+
+            # Create filename with user and device info
             filename = f"user_{user}_device_{device}_window{window_idx:04d}_activity{activity_id}_{activity_name}.csv"
-            filepath = user_device_dir / filename
+            filepath = activity_dir / filename
 
             # Add metadata columns
             window_data_copy = window_data.copy()
             window_data_copy['window_index'] = window_idx
             window_data_copy['activity_name'] = activity_name
+            window_data_copy['user'] = user
+            window_data_copy['device'] = device
             window_data_copy['window_size'] = window_size
             window_data_copy['step_size'] = step_size
             window_data_copy['overlap'] = overlap

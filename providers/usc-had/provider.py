@@ -216,11 +216,9 @@ class USCHADProvider(DatasetProvider):
         logger.info("")
 
         output_path = Path(output_dir)
-        norm_method = self.config['preprocessing'].get('normalization', 'zscore')
-
-        # Include normalization in output path
-        output_path = output_path / norm_method
         output_path.mkdir(parents=True, exist_ok=True)
+
+        norm_method = self.config['preprocessing'].get('normalization', 'zscore')
 
         # Step 1: Load data
         logger.info("Step 1: Loading raw data from all subjects...")
@@ -246,8 +244,12 @@ class USCHADProvider(DatasetProvider):
 
         # Step 5: Create windows
         logger.info("Step 5: Creating sliding windows...")
-        train_dir = output_path / 'train'
-        test_dir = output_path / 'test'
+        train_test_dir = output_path / 'train-test-splits'
+        train_dir = train_test_dir / 'train'
+        test_dir = train_test_dir / 'test'
+
+        train_dir.mkdir(parents=True, exist_ok=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
 
         total_train = self._create_and_save_windows(train_trials, train_dir, is_test=False, norm_method=norm_method)
         total_test = self._create_and_save_windows(test_trials, test_dir, is_test=True, norm_method=norm_method)
@@ -258,9 +260,9 @@ class USCHADProvider(DatasetProvider):
         logger.info("")
         logger.info(f"✓ Total training windows: {total_train}")
         logger.info(f"✓ Total test windows: {total_test}")
-        logger.info(f"✓ Output: {output_path}")
+        logger.info(f"✓ Output: {train_test_dir}")
 
-        return str(output_path)
+        return str(train_test_dir)
 
     def _split_by_subjects(self, trials_data: Dict, test_subjects: list):
         """Split trials into train/test based on subject IDs."""
@@ -434,7 +436,9 @@ class USCHADProvider(DatasetProvider):
         return (window - mu) / sd
 
     def _save_window_csv(self, window, trial_info, window_idx, output_dir, is_test):
-        """Save a single window as CSV file with metadata."""
+        """Save a single window as CSV file with metadata.
+        Uses PAMAP2-style structure: split/activity_name/filename.csv
+        """
         columns = ['acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
         df = pd.DataFrame(window, columns=columns)
 
@@ -449,10 +453,14 @@ class USCHADProvider(DatasetProvider):
         df['height'] = trial_info['height']
         df['weight'] = trial_info['weight']
 
-        # Save to file
-        subject_dir = output_dir / f"Subject{trial_info['subject_number']}"
-        filename = f"s{trial_info['subject_number']}_a{trial_info['activity_number']}_t{trial_info['trial_number']}_w{window_idx}.csv"
-        file_path = subject_dir / filename
+        # Create activity-based directory
+        activity_name = trial_info['activity_name'].replace(' ', '_')
+        activity_dir = output_dir / activity_name
+        activity_dir.mkdir(parents=True, exist_ok=True)
+
+        # New filename format: subject{id}_window{idx}_activity{num}_{name}.csv
+        filename = f"subject{trial_info['subject_number']}_window{window_idx}_activity{trial_info['activity_number']}_{activity_name}.csv"
+        file_path = activity_dir / filename
 
         df.to_csv(file_path, index=False)
 

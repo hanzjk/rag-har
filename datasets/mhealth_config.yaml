@@ -6,8 +6,8 @@ description: "mHealth Activity Recognition Dataset - Multi-sensor Body-Worn Sens
 
 # Data source configuration
 data_source:
-  folder_path: "/Users/hansi/Downloads/MHEALTHDATASET 2"  # Directory containing mHealth_subjectX.log files
-  num_subjects: 10  # Number of subjects (1-10)
+  folder_path: "/Users/hansi/Downloads/MHEALTHDATASET 2" # Directory containing mHealth_subjectX.log files
+  num_subjects: 10 # Number of subjects (1-10)
 
   # Activity labels (excluding null class)
   activities:
@@ -26,10 +26,10 @@ data_source:
 
 # Preprocessing configuration
 preprocessing:
-  window_size: 200      # Window size in samples (4 seconds at 50Hz)
-  step_size: 50         # Step size in samples (0 for non-overlapping, 50 for 75% overlap)
-  sampling_rate: 50     # Sampling rate in Hz
-  test_subject_id: 3    # Subject ID to use for testing (1-10)
+  window_size: 200 # Window size in samples (4 seconds at 50Hz)
+  step_size: 50 # Step size in samples (0 for non-overlapping, 50 for 75% overlap)
+  sampling_rate: 50 # Sampling rate in Hz
+  test_subject_id: 3 # Subject ID to use for testing (1-10)
 
 # Feature extraction configuration
 # Sensor columns: chest_acc_{x,y,z}
@@ -47,8 +47,8 @@ features:
     - p75
 
   # Optional PCA features for dimensionality reduction
-  include_pca: false    # Set to true to enable PCA features
-  pca_components: 3     # Number of PCA components (only if include_pca is true)
+  include_pca: false # Set to true to enable PCA features
+  pca_components: 3 # Number of PCA components (only if include_pca is true)
 
 # Classification prompts configuration
 prompts:
@@ -130,8 +130,7 @@ prompts:
     • Be robust to absolute offsets/scales from mounting/orientation. Favor relative comparisons over exact values.
     • Small axis naming or sign differences shouldn't change the decision if the pattern of variability and dominance aligns.
 
-    OUTPUT
-    • Return exactly one class ID from CLASSES.
+    • Return exactly one class label from CLASSES.
     • Output the label only, on a single line. No explanations or extra text.
 
     POLICY

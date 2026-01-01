@@ -61,8 +61,8 @@ class GOTOVFeatureExtractor:
             logger.warning(f"Directory not found: {windows_path}")
             return windows
 
-        # Load all CSV files
-        for csv_file in sorted(windows_path.glob("*.csv")):
+        # Load all CSV files recursively (in activity subfolders)
+        for csv_file in sorted(windows_path.rglob("subject*.csv")):
             # Load CSV data
             df = pd.read_csv(csv_file)
 
@@ -142,12 +142,18 @@ class GOTOVFeatureExtractor:
             # Extract features with temporal segmentation and generate description
             description = self._generate_description(df)
 
-            # Get activity label for filename
-            activity_label = df['labels'].iloc[0] if 'labels' in df.columns else 'unknown'
+            # Parse filename: subject{id}_window{num}_activity_{name}.csv
+            # Extract window number and activity name
+            parts = filename.replace('.csv', '').split('_', 3)
+            if len(parts) >= 4:
+                window_num = parts[1].replace('window', '')
+                activity_name = parts[3]  # Everything after "activity_"
 
-            # Save description: filename_activity_LABEL_stats.txt
-            base_name = filename.replace('.csv', '')
-            desc_file = descriptions_dir / f"{base_name}_activity_{activity_label}_stats.txt"
+                # Output format: window_{num}_activity_{name}_stats.txt
+                desc_file = descriptions_dir / f"window_{window_num}_activity_{activity_name}_stats.txt"
+            else:
+                # Fallback for unexpected format
+                desc_file = descriptions_dir / f"{filename.replace('.csv', '')}_stats.txt"
 
             with open(desc_file, 'w') as f:
                 f.write(description)
