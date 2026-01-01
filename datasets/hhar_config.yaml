@@ -8,14 +8,14 @@ description: "Heterogeneity Dataset for Human Activity Recognition - Smartwatch 
 data_source:
   data_dir: "Activity recognition exp" # Directory containing Watch_accelerometer.csv and Watch_gyroscope.csv
 
-# Activity labels (excluding null)
-activities:
-  - bike
-  - sit
-  - stand
-  - walk
-  - stairsup
-  - stairsdown
+  # Activity labels (excluding null)
+  activities:
+    - bike
+    - sit
+    - stand
+    - walk
+    - stairsup
+    - stairsdown
 
 # Preprocessing configuration
 preprocessing:

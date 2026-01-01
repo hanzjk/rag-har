@@ -83,10 +83,11 @@ class MHEALTHFeatureExtractor:
         descriptions_dir.mkdir(exist_ok=True)
 
         # Find all window CSV files in train_test_splits directory
+        # New format: subject*_window*_activity*.csv
         windows_path = Path(windows_dir)
         all_windows = []
 
-        for csv_file in windows_path.rglob("window_*.csv"):
+        for csv_file in windows_path.rglob("subject*_window*.csv"):
             all_windows.append(csv_file)
 
         logger.info(f"Found {len(all_windows)} window files")
@@ -102,6 +103,7 @@ class MHEALTHFeatureExtractor:
     def _process_windows(self, all_windows: List[Path], data_root: Path, out_root: Path):
         """
         Process all window CSV files and generate statistical descriptions.
+        Uses PAMAP2-style output format.
 
         Args:
             all_windows: List of window CSV file paths
@@ -110,13 +112,24 @@ class MHEALTHFeatureExtractor:
         """
         for file_path in tqdm(all_windows, desc="Processing windows"):
             try:
-                # Parse activity_id, subject, window_name from path
-                # Path structure: .../train_test_splits/train_or_test/activity_id/subject_X/window_Y.csv
-                parts = file_path.parts
-                activity_id = parts[-3]
-                subject_folder = parts[-2]  # subject_X
-                subject_id = subject_folder.split("_")[1]
-                window_name = file_path.stem  # window_Y
+                # New filename format: subject{id}_window{num}_activity{id}_{name}.csv
+                # Extract metadata from filename
+                filename = file_path.stem
+
+                # Parse: subject{id}_window{num}_activity{id}_{name}
+                # Split by '_' with limit to preserve activity name with underscores
+                parts = filename.split('_', 3)  # Split into max 4 parts
+                if len(parts) < 4:
+                    logger.warning(f"Unexpected filename format: {filename}")
+                    continue
+
+                # parts[0] = 'subject{id}'
+                # parts[1] = 'window{num}'
+                # parts[2] = 'activity{id}'
+                # parts[3] = '{activity_name}' (may contain underscores)
+
+                window_num = parts[1].replace('window', '')
+                activity_name = parts[3]  # Activity name with all underscores preserved
 
                 # Load window data
                 df = pd.read_csv(file_path)
@@ -124,12 +137,9 @@ class MHEALTHFeatureExtractor:
                 # Generate description
                 description = self._generate_description(df)
 
-                # Create output directory organized by subject
-                subject_out_dir = out_root / subject_id
-                subject_out_dir.mkdir(parents=True, exist_ok=True)
-
-                # Create output filename: activity_subject_window_stat.txt
-                out_file = subject_out_dir / f"{activity_id}_{subject_id}_{window_name}_stat.txt"
+                # Create output filename: window_{num}_activity_{name}_stats.txt
+                out_filename = f"window_{window_num}_activity_{activity_name}_stats.txt"
+                out_file = out_root / out_filename
 
                 # Save description
                 with open(out_file, "w") as f:

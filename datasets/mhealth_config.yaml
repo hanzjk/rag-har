@@ -6,30 +6,30 @@ description: "mHealth Activity Recognition Dataset - Multi-sensor Body-Worn Sens
 
 # Data source configuration
 data_source:
-  folder_path: "MHEALTHDATASET"  # Directory containing mHealth_subjectX.log files
+  folder_path: "/Users/hansi/Downloads/MHEALTHDATASET 2"  # Directory containing mHealth_subjectX.log files
   num_subjects: 10  # Number of subjects (1-10)
 
-# Activity labels (excluding null class)
-activities:
-  - standing_still
-  - sitting_relaxing
-  - lying_down
-  - walking
-  - climbing_stairs
-  - waist_bends_forward
-  - frontal_elevation_arms
-  - knees_bending_crouching
-  - cycling
-  - jogging
-  - running
-  - jump_front_back
+  # Activity labels (excluding null class)
+  activities:
+    - standing_still
+    - sitting_relaxing
+    - lying_down
+    - walking
+    - climbing_stairs
+    - waist_bends_forward
+    - frontal_elevation_arms
+    - knees_bending_crouching
+    - cycling
+    - jogging
+    - running
+    - jump_front_back
 
 # Preprocessing configuration
 preprocessing:
   window_size: 200      # Window size in samples (4 seconds at 50Hz)
   step_size: 50         # Step size in samples (0 for non-overlapping, 50 for 75% overlap)
   sampling_rate: 50     # Sampling rate in Hz
-  test_subject_id: 1    # Subject ID to use for testing (1-10)
+  test_subject_id: 3    # Subject ID to use for testing (1-10)
 
 # Feature extraction configuration
 # Sensor columns: chest_acc_{x,y,z}

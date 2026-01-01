@@ -9,20 +9,20 @@ data_source:
   folder_path: "USC-HAD"  # Directory containing Subject1-14 folders
   num_subjects: 14  # Number of subjects (1-14)
 
-# Activity labels (12 activities)
-activities:
-  - walking_forward
-  - walking_left
-  - walking_right
-  - walking_upstairs
-  - walking_downstairs
-  - running_forward
-  - jumping
-  - sitting
-  - standing
-  - sleeping
-  - elevator_up
-  - elevator_down
+  # Activity labels (12 activities)
+  activities:
+    - walking_forward
+    - walking_left
+    - walking_right
+    - walking_upstairs
+    - walking_downstairs
+    - running_forward
+    - jumping
+    - sitting
+    - standing
+    - sleeping
+    - elevator_up
+    - elevator_down
 
 # Preprocessing configuration
 preprocessing:

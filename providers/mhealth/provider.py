@@ -152,7 +152,7 @@ class MHEALTHProvider(DatasetProvider):
         logger.info("Step 5: Splitting by subject...")
         test_subject_id = self.config['preprocessing'].get('test_subject_id', 1)
 
-        train_test_dir = output_path / 'train_test_splits'
+        train_test_dir = output_path / 'train-test-splits'
         train_dir = train_test_dir / 'train'
         test_dir = train_test_dir / 'test'
 
@@ -259,6 +259,7 @@ class MHEALTHProvider(DatasetProvider):
                          test_root: Path, test_subject_id: int):
         """
         Split data by subject: one subject for testing, rest for training.
+        Uses PAMAP2-style folder structure: train/activity_name/filename.csv
 
         Args:
             source_root: Directory containing segmented data
@@ -275,6 +276,9 @@ class MHEALTHProvider(DatasetProvider):
         for activity_dir in sorted(source_root.iterdir()):
             if not activity_dir.is_dir():
                 continue
+
+            activity_id = int(activity_dir.name)
+            activity_name = self.activity_map.get(activity_id, f'activity_{activity_id}')
 
             # For each subject directory within the activity
             for subject_dir in sorted(activity_dir.iterdir()):
@@ -302,14 +306,18 @@ class MHEALTHProvider(DatasetProvider):
                     dest_root = train_root
                     total_train += len(window_files)
 
-                # Create destination directory
-                dest_dir = dest_root / activity_dir.name / subject_dir.name
+                # Create destination directory using activity name (not nested subject folder)
+                dest_dir = dest_root / activity_name
                 dest_dir.mkdir(parents=True, exist_ok=True)
 
-                # Copy all window files
+                # Copy and rename window files with metadata in filename
                 for window_file in window_files:
                     import shutil
-                    dest_file = dest_dir / window_file.name
+                    # Extract window number from filename
+                    window_num = window_file.stem.split('_')[1]
+                    # New filename format: subject{id}_window{num}_activity{id}_{name}.csv
+                    new_filename = f"subject{subject_id}_window{window_num}_activity{activity_id}_{activity_name}.csv"
+                    dest_file = dest_dir / new_filename
                     shutil.copy2(window_file, dest_file)
 
         logger.info(f"  Training windows: {total_train}")
