@@ -62,22 +62,15 @@ class USCHADFeatureExtractor:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # Find all window CSV files
-        train_files = list(windows_path.glob('train/**/*.csv'))
-        test_files = list(windows_path.glob('test/**/*.csv'))
-
-        all_files = train_files + test_files
+        # Find all window CSV files recursively
+        all_files = list(windows_path.glob('**/*.csv'))
 
         logger.info(f"Found {len(all_files)} windows")
-        logger.info(f"  Training: {len(train_files)}")
-        logger.info(f"  Test: {len(test_files)}")
         logger.info("")
 
-        # Create output directories
-        train_desc_dir = output_path / 'train_descriptions'
-        test_desc_dir = output_path / 'test_descriptions'
-        train_desc_dir.mkdir(parents=True, exist_ok=True)
-        test_desc_dir.mkdir(parents=True, exist_ok=True)
+        # Create output directory
+        desc_dir = output_path / 'descriptions'
+        desc_dir.mkdir(parents=True, exist_ok=True)
 
         # Process all windows
         logger.info("Processing windows...")
@@ -106,12 +99,6 @@ class USCHADFeatureExtractor:
                     logger.error(f"Unknown method: {self.method}")
                     continue
 
-                # Determine output directory
-                if file_path in train_files:
-                    base_output_dir = train_desc_dir
-                else:
-                    base_output_dir = test_desc_dir
-
                 # Parse filename: subject{id}_window{idx}_activity{num}_{name}.csv
                 filename = file_path.stem
                 parts = filename.split('_', 3)
@@ -125,7 +112,7 @@ class USCHADFeatureExtractor:
                     # Fallback
                     out_filename = f"{filename}_stats.txt"
 
-                out_file = base_output_dir / out_filename
+                out_file = desc_dir / out_filename
 
                 # Write description
                 with open(out_file, 'w') as f:
@@ -163,14 +150,6 @@ class USCHADFeatureExtractor:
         }
 
         description_parts = []
-
-        # Add demographic information header
-        age_desc = df_full['age_descriptor'].iloc[0] if 'age_descriptor' in df_full.columns else 'unknown'
-        height_desc = df_full['height_descriptor'].iloc[0] if 'height_descriptor' in df_full.columns else 'unknown'
-        weight_desc = df_full['weight_descriptor'].iloc[0] if 'weight_descriptor' in df_full.columns else 'unknown'
-
-        description_parts.append(f"Participant: {age_desc}, {height_desc}, {weight_desc}")
-        description_parts.append("")
 
         for seg_name, seg_df in segments.items():
             description_parts.append(f"[{seg_name}]")

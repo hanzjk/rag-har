@@ -145,7 +145,7 @@ class RAGActivityClassifier:
         """
         # Extract window metadata from filename
         base = os.path.basename(window_file)
-        m = re.match(r"window_(\d+)_activity_([A-Za-z0-9_]+)_stats\.txt", base)
+        m = re.match(r"window_(\d+)_activity_([A-Za-z0-9_-]+)_stats\.txt", base)
         if not m:
             raise ValueError(f"Filename not matched: {base}")
 

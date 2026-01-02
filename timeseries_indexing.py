@@ -371,7 +371,7 @@ class MultivariateTimeSeriesIndexer:
             try:
                 base = os.path.basename(file_path)
                 # Generic filename pattern: window_1000_activity_wlk_stats.txt
-                m = re.match(r"window_(\d+)_activity_([A-Za-z0-9_]+)_stats\.txt", base)
+                m = re.match(r"window_(\d+)_activity_([A-Za-z0-9_-]+)_stats\.txt", base)
                 if not m:
                     logger.warning(f"Filename not matched: {base}")
                     continue

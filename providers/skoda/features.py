@@ -40,20 +40,17 @@ class SkodaFeatureExtractor:
 
         self.utils = FeatureExtractorUtils()
 
-    def _load_windows_from_csv(self, windows_dir: str, split_name: str) -> List[Dict]:
+    def _load_windows_from_csv(self, windows_dir: str) -> List[Dict]:
         """
         Load windows from CSV directory structure.
 
-        Expected structure: train_test_splits/train/*.csv or train_test_splits/test/*.csv
-
         Args:
-            windows_dir: Path to train_test_splits directory
-            split_name: 'train' or 'test'
+            windows_dir: Path to windows directory (train or test)
 
         Returns:
             List of window dictionaries
         """
-        windows_path = Path(windows_dir) / split_name
+        windows_path = Path(windows_dir)
         windows = []
 
         if not windows_path.exists():
@@ -76,20 +73,19 @@ class SkodaFeatureExtractor:
                 windows.append({
                     'window_id': window_id,
                     'activity_name': activity_name,
-                    'split': split_name,
                     'data': df,
                     'filename': csv_file.name
                 })
 
-        logger.info(f"Loaded {len(windows)} {split_name} windows")
+        logger.info(f"Loaded {len(windows)} windows")
         return windows
 
     def extract_features(self, windows_dir: str, output_dir: str) -> str:
         """
-        Extract features from all windows (train and test).
+        Extract features from all windows.
 
         Args:
-            windows_dir: Path to preprocessed windows directory (train_test_splits)
+            windows_dir: Path to preprocessed windows directory (train or test)
             output_dir: Directory to save features and descriptions
 
         Returns:
@@ -105,25 +101,17 @@ class SkodaFeatureExtractor:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # Create descriptions directories
-        train_desc_dir = output_path / 'train_descriptions'
-        test_desc_dir = output_path / 'test_descriptions'
-        train_desc_dir.mkdir(exist_ok=True)
-        test_desc_dir.mkdir(exist_ok=True)
+        # Create descriptions directory
+        desc_dir = output_path / 'descriptions'
+        desc_dir.mkdir(exist_ok=True)
 
-        # Process train windows
-        logger.info("Processing training windows...")
-        train_windows = self._load_windows_from_csv(windows_dir, 'train')
-        self._process_windows(train_windows, train_desc_dir)
-
-        # Process test windows
-        logger.info("Processing test windows...")
-        test_windows = self._load_windows_from_csv(windows_dir, 'test')
-        self._process_windows(test_windows, test_desc_dir)
+        # Process windows
+        logger.info("Processing windows...")
+        windows = self._load_windows_from_csv(windows_dir)
+        self._process_windows(windows, desc_dir)
 
         logger.info("")
-        logger.info(f"✓ Train descriptions: {len(train_windows)} files in {train_desc_dir}")
-        logger.info(f"✓ Test descriptions: {len(test_windows)} files in {test_desc_dir}")
+        logger.info(f"✓ Descriptions: {len(windows)} files in {desc_dir}")
 
         return str(output_path)
 

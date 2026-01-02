@@ -6,8 +6,8 @@ description: "USC Human Activity Dataset - Smartphone accelerometer and gyroscop
 
 # Data source configuration
 data_source:
-  folder_path: "USC-HAD"  # Directory containing Subject1-14 folders
-  num_subjects: 14  # Number of subjects (1-14)
+  folder_path: "USC-HAD" # Directory containing Subject1-14 folders
+  num_subjects: 14 # Number of subjects (1-14)
 
   # Activity labels (12 activities)
   activities:
@@ -26,16 +26,16 @@ data_source:
 
 # Preprocessing configuration
 preprocessing:
-  window_size: 66        # Window size in samples (2 seconds at 33Hz after downsampling)
-  step_size: 66          # Step size in samples (66 for non-overlapping, adjust for overlap)
-  sampling_rate: 33      # Sampling rate in Hz (after downsampling from ~100Hz)
-  test_subjects: [13, 14]  # Subject IDs to use for testing
-  normalization: "zscore"  # Options: 'zscore', 'minmax100', 'revin', 'none'
+  window_size: 66 # Window size in samples (2 seconds at 33Hz after downsampling)
+  step_size: 66 # Step size in samples (66 for non-overlapping, adjust for overlap)
+  sampling_rate: 33 # Sampling rate in Hz (after downsampling from ~100Hz)
+  test_subjects: [13, 14] # Subject IDs to use for testing
+  normalization: "zscore" # Options: 'zscore', 'minmax100', 'revin', 'none'
 
 # Feature extraction configuration
 # Sensor columns: acc_{x,y,z}, gyro_{x,y,z}
 features:
-  method: "default"  # Options: 'default', 'comprehensive', 'structured'
+  method: "default" # Options: 'default', 'comprehensive', 'structured'
 
   # Statistics to compute (used by comprehensive method)
   statistics:

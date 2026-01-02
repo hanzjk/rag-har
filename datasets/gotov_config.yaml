@@ -6,18 +6,36 @@ description: "GOTOV Activity Recognition Dataset - Multi-sensor Body-Worn Accele
 
 # Data source configuration
 data_source:
-  dataset_dir: "Activity_Measurements"  # Directory containing GOTOV subject folders
+  dataset_dir: "data/Activity_Measurements" # Directory containing GOTOV subjects
+  activities:
+    - syncJumping
+    - step
+    - standing
+    - lyingDownLeft
+    - lyingDownRight
+    - sittingSofa
+    - sittingCouch
+    - sittingChair
+    - walkingStairsUp
+    - dishwashing
+    - stakingShelves
+    - vacuumCleaning
+    - walkingSlow
+    - walkingNormal
+    - walkingFast
+    - cycling
+
 
 # Preprocessing configuration
 preprocessing:
-  window_size: 24       # Window size in samples
-  train_step: 12        # Step size for training (50% overlap)
-  test_step: 24         # Step size for testing (no overlap)
+  window_size: 24 # Window size in samples
+  train_step: 12 # Step size for training (50% overlap)
+  test_step: 24 # Step size for testing (no overlap)
 
   # Subject splits
-  exclude_subjects: [2, 3, 4, 12, 19, 23]  # Subjects to exclude from dataset
-  test_subjects: [5, 15, 30]                # Subjects for test set
-  val_subjects: [13, 21, 29]                # Subjects for validation set
+  exclude_subjects: [2, 3, 4, 12, 19, 23] # Subjects to exclude from dataset
+  test_subjects: [5, 15, 30] # Subjects for test set
+  val_subjects: [13, 21, 29] # Subjects for validation set
 
 # Feature extraction configuration
 # Sensor columns: ankle_x, ankle_y, ankle_z, wrist_x, wrist_y, wrist_z, chest_x, chest_y, chest_z

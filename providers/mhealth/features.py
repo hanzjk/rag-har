@@ -39,7 +39,6 @@ class MHEALTHFeatureExtractor:
         feature_config = config.get('features', {})
 
         self.statistics = feature_config.get('statistics', ['mean', 'std', 'min', 'max', 'median', 'p25', 'p75'])
-        self.include_pca = feature_config.get('include_pca', False)
         self.pca_components = feature_config.get('pca_components', 3)
 
         # MHEALTH sensor locations
@@ -71,10 +70,7 @@ class MHEALTHFeatureExtractor:
         logger.info("="*60)
         logger.info("Sensors: Chest (acc), Ankle (acc+gyro+mag), Arm (acc+gyro+mag)")
         logger.info("Temporal segmentation: whole, start, mid, end")
-        if self.include_pca:
-            logger.info(f"PCA enabled: {self.pca_components} components")
-        logger.info("")
-
+     
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
