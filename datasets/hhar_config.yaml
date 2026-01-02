@@ -19,11 +19,11 @@ data_source:
 
 # Preprocessing configuration
 preprocessing:
-  window_size: 200 # Window size in samples (2 seconds at 100Hz)
-  overlap: 0.5 # Overlap ratio (0.5 = 50% overlap)
+  window_size: 400 # Window size in samples
+  overlap: 0 # Overlap ratio (0.5 = 50% overlap)
   sampling_rate: 100 # Sampling rate in Hz
   test_ratio: 0.2 # Ratio of users for test set (if not using manual test_user)
-  test_user: null # Manual test user selection (e.g., 'd') or null for automatic
+  test_user: d # Manual test user selection (e.g., 'd') or null for automatic
 
 # Feature extraction configuration
 # Sensor columns: acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z
