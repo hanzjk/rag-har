@@ -6,7 +6,7 @@ description: "Skoda MiniCheckpoint 2015_08 - Activity Recognition with 20 Arm-Mo
 
 # Data source configuration
 data_source:
-  mat_file: "SkodaMiniCP_2015_08/Skoda.mat"  # Path to Skoda.mat file
+  mat_file: "/Skoda.mat" # Path to Skoda.mat file
   activities:
     - 1_0
     - 2_0
@@ -21,11 +21,10 @@ data_source:
 
 # Preprocessing configuration
 preprocessing:
-  window_size: 24  # Window size in samples
-  train_step: 12   # Step size for training (50% overlap)
-  test_step: 24    # Step size for testing (no overlap)
-  include_null_class: true  # Whether to include null class (labels_0.0)
-
+  window_size: 24 # Window size in samples
+  train_step: 12 # Step size for training (50% overlap)
+  test_step: 24 # Step size for testing (no overlap)
+  include_null_class: true # Whether to include null class (labels_0.0)
 
 features:
   statistics:

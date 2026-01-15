@@ -38,7 +38,7 @@ RAG-HAR is implemented for the following publicly available HAR datasets:
 | **USC-HAD** | 12 activities | Accelerometer and gyroscope | [USC](https://sipi.usc.edu/had/) |
 | **HHAR** | 6 activities | Accelerometer and gyroscope (smartphones & smartwatches) | [UCI Repository](https://archive.ics.uci.edu/dataset/344/heterogeneity+activity+recognition) |
 | **GOTOV** | 16 activities | 3 accelerometers placed on hand, chest, and ankle | [4TUResearch Data](https://data.4tu.nl/datasets/f9bae0cd-ec4e-4cfb-aaa5-41bd1c5554ce/1) |
-| **Skoda** | 10 gestures | 20 accelerometers attached to worker’s arms | [HAR Dataset Repository](http://har-dataset.org/lib/exe/fetch.php?media=wiki:dataset:skodaminicp:skodaminicp_2015_08.zip/) |
+| **Skoda** | 10 gestures | 20 accelerometers attached to worker’s arms | [Data Repository](https://drive.google.com/file/d/15Q8oV02h2_e94IWJ9rnKLrSCKPCTW5FS/view?usp=drive_link) |
 
 **Note:** Download the datasets and update the `data_source` paths in the corresponding config files (`datasets/*.yaml`).
 

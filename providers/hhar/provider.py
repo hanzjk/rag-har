@@ -46,6 +46,9 @@ class HHARProvider(DatasetProvider):
         # Users in the dataset
         self.users = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
 
+        # Map user letters to subject IDs for consistent naming
+        self.user_to_subject_id = {user: idx for idx, user in enumerate(self.users)}
+
     def load_raw_data(self) -> Dict[str, pd.DataFrame]:
         """
         Load and merge accelerometer and gyroscope data from CSV files.
@@ -211,35 +214,54 @@ class HHARProvider(DatasetProvider):
                     # Determine split
                     split = 'test' if user in test_users else 'train'
 
-                    # Save windows
-                    self._save_windows_as_csv(windows, user, device, split, output_path)
-
-                    # Track windows for split information
+                    # Track windows with split information
                     for window_data, window_idx, activity_name, activity_id in windows:
-                        all_windows.append({
-                            'user': user,
-                            'device': device,
-                            'window_idx': window_idx,
-                            'activity_name': activity_name,
-                            'activity_id': activity_id,
-                            'split': split,
-                            'filename': f"user_{user}_device_{device}_window{window_idx:04d}_activity{activity_id}_{activity_name}.csv"
-                        })
+                        all_windows.append((window_data, window_idx, activity_name, activity_id, user, device, split))
 
-        # Save split information
-        split_info = pd.DataFrame(all_windows)
+        # Step 4: Split windows into train/test
+        logger.info("Step 4: Splitting windows into train/test...")
+        train_windows = [w for w in all_windows if w[6] == 'train']
+        test_windows = [w for w in all_windows if w[6] == 'test']
+
+        logger.info(f"  Train: {len(train_windows)} windows")
+        logger.info(f"  Test: {len(test_windows)} windows")
+
+        # Step 5: Save windows
+        logger.info("Step 5: Saving windows...")
+        train_test_dir = output_path / 'train-test-splits'
+        train_test_dir.mkdir(parents=True, exist_ok=True)
+
+        self._save_split_windows(train_windows, train_test_dir, 'train')
+        self._save_split_windows(test_windows, train_test_dir, 'test')
+
+        # Save split info
+        split_info_data = []
+        for window_data, window_idx, activity_name, activity_id, user, device, split in all_windows:
+            subject_id = self.user_to_subject_id[user]
+            split_info_data.append({
+                'user': user,
+                'subject_id': subject_id,
+                'device': device,
+                'window_idx': window_idx,
+                'activity_name': activity_name,
+                'activity_id': activity_id,
+                'split': split,
+                'filename': f"subject{subject_id}_window{window_idx}_activity{activity_id}_{activity_name}.csv"
+            })
+
+        split_info = pd.DataFrame(split_info_data)
         split_info.to_csv(output_path / 'split_info.csv', index=False)
 
         # Save summary
-        self._save_summary(split_info, output_path)
+        self._save_split_summary(train_windows, test_windows, output_path, test_users)
 
         logger.info("")
         logger.info(f"✓ Total windows: {len(all_windows)}")
-        logger.info(f"✓ Train windows: {len(split_info[split_info['split'] == 'train'])}")
-        logger.info(f"✓ Test windows: {len(split_info[split_info['split'] == 'test'])}")
-        logger.info(f"✓ Output: {output_path}")
+        logger.info(f"✓ Train windows: {len(train_windows)}")
+        logger.info(f"✓ Test windows: {len(test_windows)}")
+        logger.info(f"✓ Output: {train_test_dir}")
 
-        return str(output_path)
+        return str(train_test_dir)
 
     def _split_users_train_test(self, merged_data: pd.DataFrame, test_ratio: float = 0.2) -> Tuple[List[str], List[str]]:
         """
@@ -330,77 +352,90 @@ class HHARProvider(DatasetProvider):
 
         return windows
 
-    def _save_windows_as_csv(self, windows: List[Tuple[pd.DataFrame, int, str, int]],
-                            user: str, device: str, split: str, output_dir: Path):
+    def _save_split_windows(self, windows: List[Tuple], output_path: Path, split_name: str):
         """
-        Save each window as a separate CSV file.
+        Save windows to train or test split with activity-based folder structure.
 
         Args:
-            windows: List of window tuples
-            user: User ID
-            device: Device name
-            split: 'train' or 'test'
-            output_dir: Output directory
+            windows: List of tuples (window_data, window_idx, activity_name, activity_id, user, device, split)
+            output_path: Base output path (e.g., train-test-splits)
+            split_name: 'train' or 'test'
         """
-        window_size = self.config['preprocessing']['window_size']
-        overlap = self.config['preprocessing'].get('overlap', 0.5)
-        step_size = int(window_size * (1 - overlap))
+        split_dir = output_path / split_name
+        split_dir.mkdir(exist_ok=True)
 
-        for window_data, window_idx, activity_name, activity_id in windows:
-            # Create activity-based directory
-            activity_dir = output_dir / split / activity_name
-            activity_dir.mkdir(parents=True, exist_ok=True)
+        activity_counts = {}
 
-            # Create filename with user and device info
-            filename = f"user_{user}_device_{device}_window{window_idx:04d}_activity{activity_id}_{activity_name}.csv"
+        for window_data, window_idx, activity_name, activity_id, user, device, split in tqdm(windows, desc=f"  Saving {split_name} windows"):
+            # Create activity folder
+            activity_dir = split_dir / activity_name
+            activity_dir.mkdir(exist_ok=True)
+
+            # Create filename using standard naming convention
+            subject_id = self.user_to_subject_id[user]
+            filename = f"subject{subject_id}_window{window_idx}_activity{activity_id}_{activity_name}.csv"
             filepath = activity_dir / filename
 
             # Add metadata columns
             window_data_copy = window_data.copy()
-            window_data_copy['window_index'] = window_idx
-            window_data_copy['activity_name'] = activity_name
+            window_data_copy['subject_id'] = subject_id
             window_data_copy['user'] = user
             window_data_copy['device'] = device
-            window_data_copy['window_size'] = window_size
-            window_data_copy['step_size'] = step_size
-            window_data_copy['overlap'] = overlap
+            window_data_copy['window_index'] = window_idx
+            window_data_copy['activity_name'] = activity_name
 
             # Save to CSV
             window_data_copy.to_csv(filepath, index=False)
 
-        if windows:
-            logger.debug(f"  Saved {len(windows)} windows for user {user}, device {device}")
+            # Update counts
+            activity_counts[activity_name] = activity_counts.get(activity_name, 0) + 1
 
-    def _save_summary(self, split_info: pd.DataFrame, output_path: Path):
-        """Save preprocessing summary."""
-        summary_file = output_path / 'preprocessing_summary.txt'
+        logger.info(f"  Saved {len(windows)} {split_name} windows")
+        for activity, count in sorted(activity_counts.items()):
+            logger.info(f"    {activity}: {count}")
 
-        train_info = split_info[split_info['split'] == 'train']
-        test_info = split_info[split_info['split'] == 'test']
+    def _save_split_summary(self, train_windows: List[Tuple], test_windows: List[Tuple],
+                            output_path: Path, test_users: List[str]):
+        """Save preprocessing summary with train/test split information."""
+        summary_file = output_path / f'preprocessing_summary.txt'
+
+        # Count activities for train
+        train_activity_counts = {}
+        for _, _, activity_name, _, _, _, _ in train_windows:
+            train_activity_counts[activity_name] = train_activity_counts.get(activity_name, 0) + 1
+
+        # Count activities for test
+        test_activity_counts = {}
+        for _, _, activity_name, _, _, _, _ in test_windows:
+            test_activity_counts[activity_name] = test_activity_counts.get(activity_name, 0) + 1
+
+        window_size = self.config['preprocessing']['window_size']
+        overlap = self.config['preprocessing'].get('overlap', 0.5)
+        step_size = int(window_size * (1 - overlap))
+        sampling_rate = self.config['preprocessing'].get('sampling_rate', 100)
+        overlap_pct = int(overlap * 100)
 
         with open(summary_file, 'w') as f:
             f.write("HHAR Preprocessing Summary\n")
             f.write("="*40 + "\n\n")
-            f.write(f"Total windows: {len(split_info)}\n")
-            f.write(f"Train windows: {len(train_info)}\n")
-            f.write(f"Test windows: {len(test_info)}\n\n")
+            f.write(f"Split method: User-based split\n")
+            f.write(f"Test users: {test_users}\n\n")
+            f.write(f"Total windows: {len(train_windows) + len(test_windows)}\n")
+            f.write(f"Train windows: {len(train_windows)}\n")
+            f.write(f"Test windows: {len(test_windows)}\n\n")
 
-            window_size = self.config['preprocessing']['window_size']
-            overlap = self.config['preprocessing'].get('overlap', 0.5)
-            step_size = int(window_size * (1 - overlap))
-
-            f.write(f"Window size: {window_size} samples (2 seconds at 100Hz)\n")
-            f.write(f"Step size: {step_size} samples ({int(overlap*100)}% overlap)\n")
-            f.write(f"Sampling rate: 100 Hz\n\n")
+            f.write(f"Window size: {window_size} samples ({window_size/sampling_rate:.2f} seconds at {sampling_rate}Hz)\n")
+            f.write(f"Step size: {step_size} samples ({overlap_pct}% overlap)\n")
+            f.write(f"Sampling rate: {sampling_rate} Hz\n\n")
+            f.write("Sensors: Accelerometer, Gyroscope\n")
+            f.write("Data: acc (3-axis), gyro (3-axis)\n\n")
 
             f.write("Train windows per activity:\n")
-            train_counts = train_info.groupby('activity_name').size()
-            for activity, count in sorted(train_counts.items()):
+            for activity, count in sorted(train_activity_counts.items()):
                 f.write(f"  {activity}: {count}\n")
 
             f.write("\nTest windows per activity:\n")
-            test_counts = test_info.groupby('activity_name').size()
-            for activity, count in sorted(test_counts.items()):
+            for activity, count in sorted(test_activity_counts.items()):
                 f.write(f"  {activity}: {count}\n")
 
         logger.info(f"  Saved summary to {summary_file}")

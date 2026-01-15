@@ -39,7 +39,7 @@ features:
 
 # Classification prompts configuration
 prompts:
-  system_prompt: "Analyze all the given LABELLED SAMPLES and the CANDIDATE statistics, and give the activity label that the CANDIDATE closely resembles from the LABELLED SAMPLES. Respond with only the activity id from the following options: [0,1,2,3,4,5]."
+  system_prompt: "Analyze all the given LABELLED SAMPLES and the CANDIDATE statistics, and give the activity label that the CANDIDATE closely resembles from the LABELLED SAMPLES. Respond with only the activity id from the following options: [bike, sit, stand, walk, stairsup, stairsdown]."
   user_prompt: |
     You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
 

@@ -104,17 +104,17 @@ class HHARFeatureExtractor:
             try:
                 # Parse filename to extract metadata
                 filename = file_path.name
-                # Example: user_a_device_gear_1_window0001_activity0_bike.csv
+                # Example: subject0_window0_activity0_bike.csv
 
                 # Remove extension and split by underscore
                 parts = filename.replace('.csv', '').split('_')
 
-                # Extract information
-                user = parts[1]  # 'a'
-                device = '_'.join(parts[3:5])  # 'gear_1' or 'lgwatch_1'
-                window_name = parts[5].replace('window', '')  # '0001'
-                activity_id = parts[6].replace('activity', '')  # '0'
-                activity_label = '_'.join(parts[7:]) if len(parts) > 7 else ''  # 'bike'
+                # Extract information from standard naming convention
+                # parts[0] = 'subject0', parts[1] = 'window0', parts[2] = 'activity0', parts[3:] = activity label
+                subject_id = parts[0].replace('subject', '')  # '0'
+                window_name = parts[1].replace('window', '')  # '0'
+                activity_id = parts[2].replace('activity', '')  # '0'
+                activity_label = '_'.join(parts[3:]) if len(parts) > 3 else ''  # 'bike'
 
                 # Load window data
                 df = pd.read_csv(file_path)
@@ -133,7 +133,7 @@ class HHARFeatureExtractor:
                 # Generate description
                 description = self._generate_description(df)
 
-                # Output format: window_{num}_activity_{name}_stats.txt
+                # Output format: window_{idx}_activity_{activity_label}_stats.txt
                 out_file = out_root / f"window_{window_name}_activity_{activity_label}_stats.txt"
 
                 # Save description
