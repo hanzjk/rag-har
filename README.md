@@ -1,6 +1,6 @@
 # RAG-HAR Pipeline
 
-A dataset-agnostic Retrieval-Augmented Generation pipeline for Human Activity Recognition using vector similarity search.
+A dataset-agnostic Retrieval-Augmented Generation pipeline for Human Activity Recognition.
 
 ---
 
@@ -11,16 +11,17 @@ A dataset-agnostic Retrieval-Augmented Generation pipeline for Human Activity Re
 The pipeline uses OpenAI for embeddings and LLM-based classification.
 
 **Get your API key:**
+
 1. Sign up at [OpenAI Platform](https://platform.openai.com/)
 2. Navigate to [API Keys](https://platform.openai.com/api-keys)
 3. Create a new secret key
-
 
 ### 2. Milvus Vector Database (Zilliz Cloud)
 
 The pipeline uses Milvus for vector storage and similarity search.
 
 **Get free cloud instance:**
+
 1. Sign up at [Zilliz Cloud](https://cloud.zilliz.com/signup)
 2. Create a new cluster (free tier available)
 3. Get credentials from cluster details page
@@ -31,14 +32,14 @@ The pipeline uses Milvus for vector storage and similarity search.
 
 RAG-HAR is implemented for the following publicly available HAR datasets:
 
-| Dataset | # Activities / Gestures | Sensors | Download |
-|--------|--------------------------|---------|----------|
-| **PAMAP2** | 12 activities | 3 IMUs placed on hand, chest, and ankle | [UCI Repository](https://archive.ics.uci.edu/dataset/231/pamap2+physical+activity+monitoring) |
-| **MHEALTH** | 12 activities | 3 IMUs placed on arm, ankle, and chest | [UCI Repository](https://archive.ics.uci.edu/dataset/319/mhealth+dataset) |
-| **USC-HAD** | 12 activities | Accelerometer and gyroscope | [USC](https://sipi.usc.edu/had/) |
-| **HHAR** | 6 activities | Accelerometer and gyroscope (smartphones & smartwatches) | [UCI Repository](https://archive.ics.uci.edu/dataset/344/heterogeneity+activity+recognition) |
-| **GOTOV** | 16 activities | 3 accelerometers placed on hand, chest, and ankle | [4TUResearch Data](https://data.4tu.nl/datasets/f9bae0cd-ec4e-4cfb-aaa5-41bd1c5554ce/1) |
-| **Skoda** | 10 gestures | 20 accelerometers attached to worker’s arms | [Data Repository](https://drive.google.com/file/d/15Q8oV02h2_e94IWJ9rnKLrSCKPCTW5FS/view?usp=drive_link) |
+| Dataset     | # Activities / Gestures | Sensors                                                  | Download                                                                                                 |
+| ----------- | ----------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **PAMAP2**  | 12 activities           | 3 IMUs placed on hand, chest, and ankle                  | [UCI Repository](https://archive.ics.uci.edu/dataset/231/pamap2+physical+activity+monitoring)            |
+| **MHEALTH** | 12 activities           | 3 IMUs placed on arm, ankle, and chest                   | [UCI Repository](https://archive.ics.uci.edu/dataset/319/mhealth+dataset)                                |
+| **USC-HAD** | 12 activities           | Accelerometer and gyroscope                              | [USC](https://sipi.usc.edu/had/)                                                                         |
+| **HHAR**    | 6 activities            | Accelerometer and gyroscope (smartphones & smartwatches) | [UCI Repository](https://archive.ics.uci.edu/dataset/344/heterogeneity+activity+recognition)             |
+| **GOTOV**   | 16 activities           | 3 accelerometers placed on hand, chest, and ankle        | [4TUResearch Data](https://data.4tu.nl/datasets/f9bae0cd-ec4e-4cfb-aaa5-41bd1c5554ce/1)                  |
+| **Skoda**   | 10 gestures             | 20 accelerometers attached to worker’s arms              | [Data Repository](https://drive.google.com/file/d/15Q8oV02h2_e94IWJ9rnKLrSCKPCTW5FS/view?usp=drive_link) |
 
 **Note:** Download the datasets and update the `data_source` paths in the corresponding config files (`datasets/*.yaml`).
 
@@ -134,6 +135,7 @@ output/{dataset_name}/train-test-splits/
 ```
 
 **File naming convention:**
+
 - Pattern: `subject{idx}_window{idx}_activity{idx}_{activity_label}.csv`
 - Example: `subject101_window0000_activity1_walking.csv`
 
@@ -185,7 +187,8 @@ output/{dataset_name}/features/
 ```
 
 **Feature file naming:**
-- Pattern: `window_{idx}_activity_{activity_label}_stats.txt` 
+
+- Pattern: `window_{idx}_activity_{activity_label}_stats.txt`
 - Example: `window_0_activity_walking_stats.txt`
 
 **What it does:**
@@ -200,7 +203,6 @@ Each dataset specific implementation knows how to extract features from its own 
 
 - **HAR Demo**: Handled by `providers/har_demo/features.py` (extracts from `accel_x`, `gyro_y`, `mag_z`)
 - **Your dataset**: Create `providers/your_dataset/features.py` with your column names
-
 
 ---
 
@@ -255,7 +257,7 @@ python classifier.py --config datasets/pamp2_config.yaml
 - `--config`: Path to dataset configuration YAML file (required)
 - `--model`: [Optional] LLM model for classification (default: `gpt-5-mini`)
 - `--fewshot`: [Optional] Number of samples to retrieve per temporal segment
-- `--out-fewshot`: [Optional] Final number of samples after hybrid reranking 
+- `--out-fewshot`: [Optional] Final number of samples after hybrid reranking
 
 **Auto-generated paths:**
 
@@ -331,8 +333,6 @@ prompts:
     {retrieved_data}
 ```
 
-
-
 ### How It Works
 
 1. The `PromptProvider` class (in `prompt_provider.py`) loads prompt templates from the dataset config
@@ -376,6 +376,7 @@ features:
 **IMPORTANT:** Your dataset provider MUST follow this standardized structure:
 
 **Preprocessing Step Outputs:**
+
 ```
 output/{dataset_name}/train-test-splits/
 ├── train/
@@ -392,10 +393,12 @@ output/{dataset_name}/train-test-splits/
 ```
 
 **Window CSV Naming:**
+
 - Standard pattern: `subject{idx}_window{idx}_activity{idx}_{activity_label}.csv`
 - Example: `subject101_window0000_activity1_walking.csv`
 
 **Feature Extraction Step Outputs:**
+
 ```
 output/{dataset_name}/features/
 ├── train/
@@ -409,6 +412,7 @@ output/{dataset_name}/features/
 ```
 
 **Feature File Naming:**
+
 - Pattern: `window_{idx}_activity_{activity_label}_stats.txt`
 - Example: `window_0_activity_walking_stats.txt`
 
