@@ -58,14 +58,18 @@ class FeatureExtractor:
         # List of column prefixes to extract features from
         # e.g., ['accel', 'gyro', 'mag'] for single-sensor datasets
         # or ['ankle_accel', 'wrist_gyro', 'chest_mag', ...] for multi-sensor datasets
-        self.sensor_columns = self.config.get('sensor_columns', ['accel', 'gyro', 'mag'])
+        self.sensor_columns = self.config.get(
+            "sensor_columns", ["accel", "gyro", "mag"]
+        )
 
         # Get which statistics to compute
-        self.statistics = self.config.get('statistics', ['mean', 'std', 'min', 'max', 'median'])
+        self.statistics = self.config.get(
+            "statistics", ["mean", "std", "min", "max", "median"]
+        )
 
         # Feature options
-        self.compute_magnitude = self.config.get('magnitude', True)
-        self.per_axis = self.config.get('per_axis', True)
+        self.compute_magnitude = self.config.get("magnitude", True)
+        self.per_axis = self.config.get("per_axis", True)
 
         logger.info(f"Feature extractor initialized:")
         logger.info(f"  Sensor columns: {self.sensor_columns}")
@@ -92,36 +96,36 @@ class FeatureExtractor:
         stats_dict = {}
 
         for stat_name in stat_names:
-            if stat_name == 'mean':
-                stats_dict['mean'] = np.mean(x_arr)
-            elif stat_name == 'std':
-                stats_dict['std'] = np.std(x_arr)
-            elif stat_name == 'min':
-                stats_dict['min'] = np.min(x_arr)
-            elif stat_name == 'max':
-                stats_dict['max'] = np.max(x_arr)
-            elif stat_name == 'median':
-                stats_dict['median'] = np.median(x_arr)
-            elif stat_name == 'p25':
-                stats_dict['p25'] = np.percentile(x_arr, 25)
-            elif stat_name == 'p75':
-                stats_dict['p75'] = np.percentile(x_arr, 75)
-            elif stat_name == 'variance':
-                stats_dict['variance'] = np.var(x_arr)
-            elif stat_name == 'range':
-                stats_dict['range'] = np.ptp(x_arr)
-            elif stat_name == 'skewness':
-                stats_dict['skewness'] = safe_skew(x_arr)
-            elif stat_name == 'kurtosis':
-                stats_dict['kurtosis'] = safe_kurtosis(x_arr)
-            elif stat_name == 'rms':
-                stats_dict['rms'] = np.sqrt(np.mean(x_arr ** 2))
-            elif stat_name == 'energy':
-                stats_dict['energy'] = np.sum(x_arr ** 2)
-            elif stat_name == 'zero_crossings':
-                stats_dict['zero_crossings'] = np.sum(np.diff(np.sign(x_arr)) != 0)
-            elif stat_name == 'dominant_freq':
-                stats_dict['dominant_freq'] = self._compute_dominant_frequency(x_arr)
+            if stat_name == "mean":
+                stats_dict["mean"] = np.mean(x_arr)
+            elif stat_name == "std":
+                stats_dict["std"] = np.std(x_arr)
+            elif stat_name == "min":
+                stats_dict["min"] = np.min(x_arr)
+            elif stat_name == "max":
+                stats_dict["max"] = np.max(x_arr)
+            elif stat_name == "median":
+                stats_dict["median"] = np.median(x_arr)
+            elif stat_name == "p25":
+                stats_dict["p25"] = np.percentile(x_arr, 25)
+            elif stat_name == "p75":
+                stats_dict["p75"] = np.percentile(x_arr, 75)
+            elif stat_name == "variance":
+                stats_dict["variance"] = np.var(x_arr)
+            elif stat_name == "range":
+                stats_dict["range"] = np.ptp(x_arr)
+            elif stat_name == "skewness":
+                stats_dict["skewness"] = safe_skew(x_arr)
+            elif stat_name == "kurtosis":
+                stats_dict["kurtosis"] = safe_kurtosis(x_arr)
+            elif stat_name == "rms":
+                stats_dict["rms"] = np.sqrt(np.mean(x_arr**2))
+            elif stat_name == "energy":
+                stats_dict["energy"] = np.sum(x_arr**2)
+            elif stat_name == "zero_crossings":
+                stats_dict["zero_crossings"] = np.sum(np.diff(np.sign(x_arr)) != 0)
+            elif stat_name == "dominant_freq":
+                stats_dict["dominant_freq"] = self._compute_dominant_frequency(x_arr)
             else:
                 logger.warning(f"Unknown statistic: {stat_name}")
                 stats_dict[stat_name] = 0.0
@@ -137,7 +141,7 @@ class FeatureExtractor:
         fft_freqs = np.fft.fftfreq(len(x_arr), 1.0 / self.sampling_rate)
 
         # Get magnitude spectrum (ignore DC component)
-        magnitude_spectrum = np.abs(fft_vals[1:len(x_arr)//2])
+        magnitude_spectrum = np.abs(fft_vals[1 : len(x_arr) // 2])
         if len(magnitude_spectrum) == 0:
             return 0.0
 
@@ -154,20 +158,20 @@ class FeatureExtractor:
         Returns:
             Tuple of (feature_vector, description_text)
         """
-        df = window['data']
-        activity = window['activity']
+        df = window["data"]
+        activity = window["activity"]
 
         feature_vector = []
         description_parts = []
 
         # Iterate through all sensor column prefixes
         for prefix in self.sensor_columns:
-            axes = ['x', 'y', 'z']
+            axes = ["x", "y", "z"]
 
             # Per-axis features
             if self.per_axis:
                 for axis in axes:
-                    col_name = f'{prefix}_{axis}'
+                    col_name = f"{prefix}_{axis}"
                     if col_name in df.columns:
                         stats_dict = self.compute_stats(df[col_name], self.statistics)
 
@@ -175,24 +179,32 @@ class FeatureExtractor:
                         feature_vector.extend(stats_dict.values())
 
                         # Add to description
-                        stats_str = ', '.join([f"{k}={v:.3f}" for k, v in stats_dict.items()])
-                        description_parts.append(f"{prefix.upper()} {axis.upper()}: {stats_str}")
+                        stats_str = ", ".join(
+                            [f"{k}={v:.3f}" for k, v in stats_dict.items()]
+                        )
+                        description_parts.append(
+                            f"{prefix.upper()} {axis.upper()}: {stats_str}"
+                        )
 
             # Magnitude features
             if self.compute_magnitude:
-                x_col = f'{prefix}_x'
-                y_col = f'{prefix}_y'
-                z_col = f'{prefix}_z'
+                x_col = f"{prefix}_x"
+                y_col = f"{prefix}_y"
+                z_col = f"{prefix}_z"
 
                 if all(col in df.columns for col in [x_col, y_col, z_col]):
-                    magnitude = np.sqrt(df[x_col]**2 + df[y_col]**2 + df[z_col]**2)
+                    magnitude = np.sqrt(
+                        df[x_col] ** 2 + df[y_col] ** 2 + df[z_col] ** 2
+                    )
                     stats_dict = self.compute_stats(magnitude, self.statistics)
 
                     # Add to feature vector
                     feature_vector.extend(stats_dict.values())
 
                     # Add to description
-                    stats_str = ', '.join([f"{k}={v:.3f}" for k, v in stats_dict.items()])
+                    stats_str = ", ".join(
+                        [f"{k}={v:.3f}" for k, v in stats_dict.items()]
+                    )
                     description_parts.append(f"{prefix.upper()} Magnitude: {stats_str}")
 
         description_text = f"Activity: {activity}\n" + "\n".join(description_parts)
@@ -210,18 +222,18 @@ class FeatureExtractor:
         Returns:
             Tuple of (feature_vector, description_text)
         """
-        df = window['data']
-        activity = window['activity']
+        df = window["data"]
+        activity = window["activity"]
 
         # Split into 3 equal segments
         n_rows = len(df)
         segment_size = n_rows // 3
 
         segments = {
-            'whole': df,
-            'start': df[:segment_size],
-            'middle': df[segment_size:2*segment_size],
-            'end': df[2*segment_size:]
+            "whole": df,
+            "start": df[:segment_size],
+            "middle": df[segment_size : 2 * segment_size],
+            "end": df[2 * segment_size :],
         }
 
         all_features = []
@@ -234,43 +246,55 @@ class FeatureExtractor:
 
             # Iterate through all sensor column prefixes
             for prefix in self.sensor_columns:
-                axes = ['x', 'y', 'z']
+                axes = ["x", "y", "z"]
 
                 # Per-axis features
                 if self.per_axis:
                     for axis in axes:
-                        col_name = f'{prefix}_{axis}'
+                        col_name = f"{prefix}_{axis}"
                         if col_name in segment_df.columns:
-                            stats_dict = self.compute_stats(segment_df[col_name], self.statistics)
+                            stats_dict = self.compute_stats(
+                                segment_df[col_name], self.statistics
+                            )
                             segment_features.extend(stats_dict.values())
 
-                            stats_str = ', '.join([f"{k}={v:.3f}" for k, v in stats_dict.items()])
-                            description_parts.append(f"  {prefix.upper()} {axis.upper()}: {stats_str}")
+                            stats_str = ", ".join(
+                                [f"{k}={v:.3f}" for k, v in stats_dict.items()]
+                            )
+                            description_parts.append(
+                                f"  {prefix.upper()} {axis.upper()}: {stats_str}"
+                            )
 
                 # Magnitude features
                 if self.compute_magnitude:
-                    x_col = f'{prefix}_x'
-                    y_col = f'{prefix}_y'
-                    z_col = f'{prefix}_z'
+                    x_col = f"{prefix}_x"
+                    y_col = f"{prefix}_y"
+                    z_col = f"{prefix}_z"
 
                     if all(col in segment_df.columns for col in [x_col, y_col, z_col]):
                         magnitude = np.sqrt(
-                            segment_df[x_col]**2 +
-                            segment_df[y_col]**2 +
-                            segment_df[z_col]**2
+                            segment_df[x_col] ** 2
+                            + segment_df[y_col] ** 2
+                            + segment_df[z_col] ** 2
                         )
                         stats_dict = self.compute_stats(magnitude, self.statistics)
                         segment_features.extend(stats_dict.values())
 
-                        stats_str = ', '.join([f"{k}={v:.3f}" for k, v in stats_dict.items()])
-                        description_parts.append(f"  {prefix.upper()} Magnitude: {stats_str}")
+                        stats_str = ", ".join(
+                            [f"{k}={v:.3f}" for k, v in stats_dict.items()]
+                        )
+                        description_parts.append(
+                            f"  {prefix.upper()} Magnitude: {stats_str}"
+                        )
 
             all_features.extend(segment_features)
 
         description_text = "\n".join(description_parts)
         return np.array(all_features), description_text
 
-    def process_all_windows(self, windows_file: str, output_dir: str, use_segmentation: bool = False):
+    def process_all_windows(
+        self, windows_file: str, output_dir: str, use_segmentation: bool = False
+    ):
         """
         Process all windows and generate feature vectors and descriptions.
 
@@ -284,7 +308,7 @@ class FeatureExtractor:
 
         # Load windows
         logger.info(f"Loading windows from {windows_file}")
-        with open(windows_file, 'rb') as f:
+        with open(windows_file, "rb", encoding="utf-8") as f:
             windows = pickle.load(f)
 
         logger.info(f"Processing {len(windows)} windows...")
@@ -292,7 +316,7 @@ class FeatureExtractor:
         feature_vectors = []
         activities = []
         window_ids = []
-        descriptions_dir = output_path / 'descriptions'
+        descriptions_dir = output_path / "descriptions"
         descriptions_dir.mkdir(exist_ok=True)
 
         for window in tqdm(windows, desc="Extracting features"):
@@ -303,12 +327,15 @@ class FeatureExtractor:
                     feature_vec, description = self.extract_window_features(window)
 
                 feature_vectors.append(feature_vec)
-                activities.append(window['activity'])
-                window_ids.append(window['window_id'])
+                activities.append(window["activity"])
+                window_ids.append(window["window_id"])
 
                 # Save description
-                desc_file = descriptions_dir / f"window_{window['window_id']}_activity_{window['activity']}_stats.txt"
-                with open(desc_file, 'w') as f:
+                desc_file = (
+                    descriptions_dir
+                    / f"window_{window['window_id']}_activity_{window['activity']}_stats.txt"
+                )
+                with open(desc_file, "w", encoding="utf-8") as f:
                     f.write(description)
 
             except Exception as e:
@@ -322,20 +349,23 @@ class FeatureExtractor:
         logger.info(f"Feature vector size: {feature_matrix.shape[1]}")
 
         # Save features
-        features_file = output_path / 'features.pkl'
-        with open(features_file, 'wb') as f:
-            pickle.dump({
-                'features': feature_matrix,
-                'activities': activities,
-                'window_ids': window_ids,
-                'feature_dim': feature_matrix.shape[1]
-            }, f)
+        features_file = output_path / "features.pkl"
+        with open(features_file, "wb", encoding="utf-8") as f:
+            pickle.dump(
+                {
+                    "features": feature_matrix,
+                    "activities": activities,
+                    "window_ids": window_ids,
+                    "feature_dim": feature_matrix.shape[1],
+                },
+                f,
+            )
 
         logger.info(f"Saved features to {features_file}")
 
         # Save summary
-        summary_file = output_path / 'feature_summary.txt'
-        with open(summary_file, 'w') as f:
+        summary_file = output_path / "feature_summary.txt"
+        with open(summary_file, "w") as f:
             f.write(f"Feature Extraction Summary\n")
             f.write(f"=========================\n\n")
             f.write(f"Total windows: {len(windows)}\n")
@@ -364,10 +394,10 @@ def main():
         description="Extract features from preprocessed windows (calls dataset-specific implementation)"
     )
     parser.add_argument(
-        '--config',
+        "--config",
         type=str,
         required=True,
-        help='Path to dataset configuration YAML file'
+        help="Path to dataset configuration YAML file",
     )
 
     args = parser.parse_args()
@@ -407,5 +437,5 @@ def main():
     logger.info(f"  Test features: {test_features_file}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

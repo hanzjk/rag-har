@@ -6,7 +6,7 @@ description: "PAMAP2 Physical Activity Monitoring - Multi-sensor IMU data from h
 
 # Data source configuration
 data_source:
-  folder_path: "/Users/hansi/Downloads/pamap2+physical+activity+monitoring 2/PAMAP2_Dataset/Protocol" # Directory containing subject*.dat files
+  folder_path: "/Users/hansi/Downloads/PAMAP2_Dataset/Protocol" # Directory containing subject*.dat files
   # Activity labels
   activities:
     - lying
@@ -51,24 +51,12 @@ features:
 # Classification prompts configuration
 prompts:
   system_prompt: |
-    You are a multi-class classifier for the Human Activity Monitoring dataset using tri-site IMU time series (hand, chest, ankle) summarized as statistics.
-    Following are the human activities and their IDs (labels for the classification task):
-
-    CLASSES
-    lying, sitting, standing, walking, running, cycling, nordic_walking, ascending_stairs, descending_stairs, vacuum_cleaning, ironing, rope_jumping
-
-    Above human activities were monitored using 3 IMU sensors placed on hand, chest and ankle. Each sensor captures 3-axis accelerometer, gyroscope and magnetometer data. The time series data from each sensor is summarized using the following statistics: mean, standard deviation, minimum, maximum, median, 25th percentile and 75th percentile. 
-    Given a candidate query and a set of relevant labeled sample items (each containing summary statistics for hand, chest, and ankle sensors) for your context narrowing down the possible activities you need to classify into, classify the candidate into exactly one class from the above list.
-    However, IMPORTANT - The dataset is highly imbalanced. So sometimes the relevant labelled samples may contain more from a single class. But you should choose the class based on the patterns in the statistics and not based on the frequency of samples from a particular class.
-    You MUST analyse all the given samples and compare the patterns in the statistics with the candidate query before making a decision. 
-        
-    Your output should be only the activity label from the above list, on a single line. No explanations or extra text.
+    Analyze all the given LABELLED SAMPLES and the CANDIDATE statistics, and give the activity label that the CANDIDATE closely resembles from the LABELLED SAMPLES. Respond with only the activity label from the following classes: {classes}
 
   user_prompt: |
     You are given summary statistics for sensor data across temporal segments for labeled samples and one unlabeled candidate.
 
     --- CANDIDATE ---
-    Time Series:
     {candidate_series}
 
     --- LABELED SAMPLES ---
