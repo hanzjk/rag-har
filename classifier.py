@@ -430,7 +430,7 @@ def main():
     parser.add_argument(
         "--out-fewshot",
         type=int,
-        default=15,
+        default=10,
         help="Final number of samples after reranking (default: 10)",
     )
 
