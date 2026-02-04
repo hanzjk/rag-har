@@ -98,7 +98,7 @@ Each stage is run independently using its own script.
 **Command:**
 
 ```bash
-python preprocessing.py --config datasets/pamp2_config.yaml
+python preprocessing.py --config datasets/pamap2_config.yaml
 ```
 
 **Parameters:**
@@ -215,7 +215,7 @@ Each dataset specific implementation knows how to extract features from its own 
 **Command:**
 
 ```bash
-python timeseries_indexing.py --config datasets/pamp2_config.yaml
+python timeseries_indexing.py --config datasets/pamap2_config.yaml
 ```
 
 **Parameters:**
@@ -249,7 +249,7 @@ python timeseries_indexing.py --config datasets/pamp2_config.yaml
 **Command:**
 
 ```bash
-python classifier.py --config datasets/pamp2_config.yaml
+python classifier.py --config datasets/pamap2_config.yaml
 ```
 
 **Parameters:**

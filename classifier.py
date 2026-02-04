@@ -153,7 +153,7 @@ class RAGActivityClassifier:
         true_label = activity
 
         # Read window description
-        with open(window_file, "r") as f:
+        with open(window_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Extract temporal segments
